@@ -137,6 +137,7 @@ app.post("/api/auth", (req, res) => {
       username: telegramUser.username || "",
       firstName: telegramUser.first_name || "",
       lastName: telegramUser.last_name || "",
+      photoUrl: telegramUser.photo_url || "",
       phone: "",
       passport: null,
       createdAt: new Date().toISOString()
@@ -147,6 +148,7 @@ app.post("/api/auth", (req, res) => {
     user.username = telegramUser.username || user.username;
     user.firstName = telegramUser.first_name || user.firstName;
     user.lastName = telegramUser.last_name || user.lastName;
+    user.photoUrl = telegramUser.photo_url || user.photoUrl || "";
   }
 
   writeJson(USERS_FILE, users);
