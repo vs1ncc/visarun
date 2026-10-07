@@ -64,7 +64,19 @@ function App() {
 
   async function authenticate() {
     try {
+      console.log("TELEGRAM SDK:", !!tg);
+      console.log("INIT DATA:", tg?.initData ? "YES" : "NO");
+      console.log(
+        "TELEGRAM USER:",
+        tg?.initDataUnsafe?.user || "NO USER"
+      );
+
       if (!tg?.initData) {
+        alert(
+          "Ошибка Telegram: initData не получен.\n\n" +
+          "SDK: " + (!!tg ? "OK" : "NOT FOUND") + "\n" +
+          "initData: NO"
+        );
         return;
       }
 
@@ -78,25 +90,75 @@ function App() {
         })
       });
 
-      const data = await response.json();
+      const text = await response.text();
 
-      if (data.success) {
-        const telegramUser = tg?.initDataUnsafe?.user;
+      console.log("AUTH STATUS:", response.status);
+      console.log("AUTH RESPONSE:", text);
 
-        const mergedUser = {
-          ...data.user,
-          telegramId: telegramUser?.id || data.user.telegramId,
-          username: telegramUser?.username || data.user.username || "",
-          firstName: telegramUser?.first_name || data.user.firstName || "",
-          lastName: telegramUser?.last_name || data.user.lastName || "",
-          photoUrl: telegramUser?.photo_url || data.user.photoUrl || ""
-        };
+      let data;
 
-        setUser(mergedUser);
-        loadOrders(mergedUser.telegramId);
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          `Сервер вернул не JSON (${response.status}): ${text.slice(0, 300)}`
+        );
       }
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          `Ошибка авторизации: HTTP ${response.status}`
+        );
+      }
+
+      if (!data.success) {
+        throw new Error(
+          data.error || "Авторизация не выполнена"
+        );
+      }
+
+      const telegramUser = tg?.initDataUnsafe?.user;
+
+      const mergedUser = {
+        ...data.user,
+        telegramId:
+          telegramUser?.id ||
+          data.user.telegramId,
+
+        username:
+          telegramUser?.username ||
+          data.user.username ||
+          "",
+
+        firstName:
+          telegramUser?.first_name ||
+          data.user.firstName ||
+          "",
+
+        lastName:
+          telegramUser?.last_name ||
+          data.user.lastName ||
+          "",
+
+        photoUrl:
+          telegramUser?.photo_url ||
+          data.user.photoUrl ||
+          ""
+      };
+
+      console.log("AUTH SUCCESS:", mergedUser);
+
+      setUser(mergedUser);
+      loadOrders(mergedUser.telegramId);
+
     } catch (error) {
-      console.error(error);
+      console.error("AUTH ERROR:", error);
+
+      alert(
+        "Ошибка авторизации:\n\n" +
+        error.message
+      );
     }
   }
 
