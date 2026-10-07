@@ -1,0 +1,1399 @@
+import React, { useEffect, useState } from "react";
+import { createRoot } from "react-dom/client";
+import "./styles.css";
+
+const tg = window.Telegram?.WebApp;
+
+if (tg) {
+  tg.ready();
+  tg.expand();
+}
+
+const API = "/api";
+
+const ROUTES = {
+  LAOS: "Нячанг — Лаос",
+  CAMBODIA: "Нячанг — Камбоджа"
+};
+
+const SERVICES = {
+  STAMP: {
+    title: "Штамп на 45 дней",
+    priceVnd: 500000,
+    priceRub: 1600
+  },
+
+  VISA: {
+    title: "Виза + штамп на 90 дней",
+    priceVnd: 900000,
+    priceRub: 3000
+  }
+};
+
+function App() {
+  const [screen, setScreen] = useState("home");
+
+  const [user, setUser] = useState(null);
+
+  const [route, setRoute] = useState(null);
+  const [service, setService] = useState(null);
+
+  const [passport, setPassport] = useState({
+    fullName: "",
+    birthDate: "",
+    passportNumber: ""
+  });
+
+  const [consent, setConsent] = useState(false);
+
+  const [selectedSeat, setSelectedSeat] = useState(null);
+
+  const [order, setOrder] = useState(null);
+
+  const [orders, setOrders] = useState([]);
+
+  const [receipt, setReceipt] = useState(null);
+
+  const [timeLeft, setTimeLeft] = useState(1200);
+
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    authenticate();
+  }, []);
+
+  async function authenticate() {
+    try {
+      if (!tg?.initData) {
+        return;
+      }
+
+      const response = await fetch(`${API}/auth`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          initData: tg.initData
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setUser(data.user);
+
+        loadOrders(data.user.telegramId);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function loadOrders(telegramId) {
+    try {
+      const response = await fetch(
+        `${API}/orders/user/${telegramId}`
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setOrders(data.orders);
+      }
+    } catch {}
+  }
+
+  function openRoute(routeName) {
+    setRoute(routeName);
+    setScreen("service");
+  }
+
+  function openService(serviceType) {
+    setService(SERVICES[serviceType]);
+    setScreen("passport");
+  }
+
+  function openPrivacy() {
+    setScreen("privacy");
+  }
+
+  function openTerms() {
+    setScreen("terms");
+  }
+
+  async function savePassportAndContinue() {
+    if (!passport.fullName) {
+      alert("Введите ФИО");
+      return;
+    }
+
+    if (!passport.birthDate) {
+      alert("Введите дату рождения");
+      return;
+    }
+
+    if (!passport.passportNumber) {
+      alert("Введите номер загранпаспорта");
+      return;
+    }
+
+    if (!consent) {
+      alert(
+        "Необходимо согласиться с политикой обработки персональных данных"
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        `${API}/profile/passport`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            telegramId: user.telegramId,
+            ...passport,
+            consent: true
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error);
+      }
+
+      setScreen("seats");
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function createBooking() {
+    if (!selectedSeat) {
+      alert("Выберите место");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          telegramId: user.telegramId,
+          route,
+          service: service.title,
+          priceRub: service.priceRub,
+          priceVnd: service.priceVnd,
+          seat: selectedSeat
+        })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error);
+      }
+
+      setOrder(data.order);
+
+      setTimeLeft(1200);
+
+      setScreen("payment");
+
+      loadOrders(user.telegramId);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (screen !== "payment") return;
+
+    if (timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((value) => value - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [screen, timeLeft]);
+
+  function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+
+    return `${String(minutes).padStart(2, "0")}:${String(
+      secs
+    ).padStart(2, "0")}`;
+  }
+
+  async function uploadReceipt() {
+    if (!receipt) {
+      alert("Выберите файл подтверждения оплаты");
+      return;
+    }
+
+    const formData = new FormData();
+
+    formData.append("receipt", receipt);
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        `${API}/orders/${order.id}/receipt`,
+        {
+          method: "POST",
+          body: formData
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error);
+      }
+
+      alert(
+        "Подтверждение отправлено. Ожидайте проверки оплаты."
+      );
+
+      loadOrders(user.telegramId);
+
+      setScreen("bookings");
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function formatRub(value) {
+    return `${value.toLocaleString("ru-RU")} ₽`;
+  }
+
+  return (
+    <div className="app">
+
+      <main className="content">
+
+        {screen === "home" && (
+          <Home
+            onRoute={openRoute}
+            user={user}
+          />
+        )}
+
+        {screen === "service" && (
+          <ServiceSelection
+            route={route}
+            onBack={() => setScreen("home")}
+            onSelect={openService}
+          />
+        )}
+
+        {screen === "passport" && (
+          <Passport
+            passport={passport}
+            setPassport={setPassport}
+            consent={consent}
+            setConsent={setConsent}
+            onBack={() => setScreen("service")}
+            onPrivacy={openPrivacy}
+            onContinue={savePassportAndContinue}
+            loading={loading}
+          />
+        )}
+
+        {screen === "seats" && (
+          <SeatSelection
+            selectedSeat={selectedSeat}
+            setSelectedSeat={setSelectedSeat}
+            onBack={() => setScreen("passport")}
+            onContinue={createBooking}
+            loading={loading}
+          />
+        )}
+
+        {screen === "payment" && (
+          <Payment
+            order={order}
+            timeLeft={timeLeft}
+            formatTime={formatTime}
+            receipt={receipt}
+            setReceipt={setReceipt}
+            onUpload={uploadReceipt}
+            loading={loading}
+          />
+        )}
+
+        {screen === "bookings" && (
+          <Bookings
+            orders={orders}
+          />
+        )}
+
+        {screen === "profile" && (
+          <Profile
+            user={user}
+            onPrivacy={openPrivacy}
+            onTerms={openTerms}
+          />
+        )}
+
+        {screen === "privacy" && (
+          <LegalPage
+            title="Политика обработки персональных данных"
+            url={`${API}/legal/privacy`}
+            onBack={() => setScreen("profile")}
+          />
+        )}
+
+        {screen === "terms" && (
+          <LegalPage
+            title="Условия сервиса"
+            url={`${API}/legal/terms`}
+            onBack={() => setScreen("profile")}
+          />
+        )}
+
+      </main>
+
+      {["home", "bookings", "profile"].includes(screen) && (
+        <BottomBar
+          screen={screen}
+          setScreen={setScreen}
+        />
+      )}
+
+    </div>
+  );
+}
+
+/* =========================
+   HOME
+========================= */
+
+function Home({ onRoute, user }) {
+  return (
+    <div className="home-page">
+
+      <header className="top-header">
+        <div className="brand-block">
+          <div className="eyebrow">FESTO</div>
+          <h1>Визаран</h1>
+          <p>Из Нячанга в Лаос и Камбоджу</p>
+        </div>
+
+        <div className="telegram-avatar">
+          {user?.firstName?.[0] || "F"}
+        </div>
+      </header>
+
+      <section className="hero">
+        <div className="hero-glow"></div>
+
+        <div className="hero-content">
+          <span className="hero-label">ВИЗАРАН ИЗ НЯЧАНГА</span>
+
+          <h2>
+            Быстрое
+            <br />
+            бронирование поездки
+          </h2>
+
+          <p>
+            Выберите направление и подходящий
+            вариант пребывания.
+          </p>
+        </div>
+
+        <div className="hero-orb">
+          <span>→</span>
+        </div>
+      </section>
+
+      <div className="section-heading">
+        <div>
+          <span>01</span>
+          <h2>Направления</h2>
+        </div>
+        <p>Выберите страну</p>
+      </div>
+
+      <div className="routes-list">
+
+        <RouteCard
+          title="Лаос"
+          route="Нячанг — Лаос"
+          description="Штамп 45 дней или виза на 90 дней"
+          accent="laos"
+          onClick={() => onRoute(ROUTES.LAOS)}
+        />
+
+        <RouteCard
+          title="Камбоджа"
+          route="Нячанг — Камбоджа"
+          description="Штамп 45 дней или виза на 90 дней"
+          accent="cambodia"
+          onClick={() => onRoute(ROUTES.CAMBODIA)}
+        />
+
+      </div>
+
+    </div>
+  );
+}
+
+function RouteCard({
+  title,
+  route,
+  description,
+  accent,
+  onClick
+}) {
+  return (
+    <button
+      className={`route-card route-card-${accent}`}
+      onClick={onClick}
+    >
+      <div className="route-card-main">
+
+        <div className="route-icon">
+          <span>{accent === "laos" ? "L" : "C"}</span>
+        </div>
+
+        <div className="route-copy">
+          <span className="route-name">{route}</span>
+          <h3>{title}</h3>
+          <p>{description}</p>
+        </div>
+
+      </div>
+
+      <div className="route-arrow">
+        <span>→</span>
+      </div>
+    </button>
+  );
+}
+
+/* =========================
+   SERVICE
+========================= */
+
+
+function ServiceSelection({
+  route,
+  onBack,
+  onSelect
+}) {
+  const cambodia =
+    route === ROUTES.CAMBODIA;
+
+  return (
+    <div>
+
+      <BackButton onClick={onBack} />
+
+      <h1>{route}</h1>
+
+      <p className="subtitle">
+        Выберите необходимую услугу
+      </p>
+
+      <ServiceCard
+        title="Штамп на 45 дней"
+        price="500 000 ₫"
+        rub="1 600 ₽"
+        onClick={() => onSelect("STAMP")}
+      />
+
+      <ServiceCard
+        title="Виза + штамп на 90 дней"
+        price="900 000 ₫"
+        rub="3 000 ₽"
+        onClick={() => onSelect("VISA")}
+      />
+
+      <div className="recommendation">
+
+        <strong>
+          Рекомендации
+        </strong>
+
+        <p>
+          • Возьмите таблетки от укачивания —
+          маршрут проходит через серпантин.
+        </p>
+
+        <p>
+          • Возьмите наличные для границы —
+          рекомендуется от 200 000 ₫
+          мелкими купюрами 10 000 и 20 000 ₫.
+        </p>
+
+        {cambodia && (
+          <>
+            <p>
+              • Возьмите 2 фотографии 3×4.
+            </p>
+
+            <p>
+              • Возьмите 30 USD наличными
+              для визового сбора Камбоджи.
+            </p>
+
+            <p>
+              • Доллары должны быть нового образца,
+              без заметных повреждений,
+              царапин и сильных помятостей.
+            </p>
+          </>
+        )}
+
+      </div>
+
+    </div>
+  );
+}
+
+function ServiceCard({
+  title,
+  price,
+  rub,
+  onClick
+}) {
+  return (
+    <button
+      className="service-card"
+      onClick={onClick}
+    >
+
+      <div>
+
+        <h3>{title}</h3>
+
+        <span className="price-vnd">
+          {price}
+        </span>
+
+        <span className="price-rub">
+          {rub}
+        </span>
+
+      </div>
+
+      <span className="arrow">
+        →
+      </span>
+
+    </button>
+  );
+}
+
+/* =========================
+   PASSPORT
+========================= */
+
+function Passport({
+  passport,
+  setPassport,
+  consent,
+  setConsent,
+  onBack,
+  onPrivacy,
+  onContinue,
+  loading
+}) {
+  return (
+    <div>
+
+      <BackButton onClick={onBack} />
+
+      <h1>
+        Данные пассажира
+      </h1>
+
+      <p className="subtitle">
+        Укажите данные загранпаспорта
+      </p>
+
+      <div className="form">
+
+        <label>
+          ФИО
+
+          <input
+            value={passport.fullName}
+            onChange={(e) =>
+              setPassport({
+                ...passport,
+                fullName: e.target.value
+              })
+            }
+            placeholder="Иванов Иван Иванович"
+          />
+        </label>
+
+        <label>
+          Дата рождения
+
+          <input
+            type="date"
+            value={passport.birthDate}
+            onChange={(e) =>
+              setPassport({
+                ...passport,
+                birthDate: e.target.value
+              })
+            }
+          />
+        </label>
+
+        <label>
+          Номер загранпаспорта
+
+          <input
+            value={passport.passportNumber}
+            onChange={(e) =>
+              setPassport({
+                ...passport,
+                passportNumber: e.target.value
+              })
+            }
+            placeholder="12 3456789"
+          />
+        </label>
+
+      </div>
+
+      <label className="consent">
+
+        <input
+          type="checkbox"
+          checked={consent}
+          onChange={(e) =>
+            setConsent(e.target.checked)
+          }
+        />
+
+        <span>
+          Согласен с{" "}
+
+          <button
+            className="link-button"
+            onClick={(e) => {
+              e.preventDefault();
+              onPrivacy();
+            }}
+          >
+            политикой обработки
+            персональных данных
+          </button>
+        </span>
+
+      </label>
+
+      <button
+        className="primary-button"
+        disabled={loading}
+        onClick={onContinue}
+      >
+        {loading
+          ? "Сохраняем..."
+          : "Перейти к бронированию"}
+      </button>
+
+    </div>
+  );
+}
+
+/* =========================
+   SEATS
+========================= */
+
+function SeatSelection({
+  selectedSeat,
+  setSelectedSeat,
+  onBack,
+  onContinue,
+  loading
+}) {
+  const seats = [];
+
+  for (let i = 1; i <= 18; i++) {
+    seats.push(`${i}А`);
+    seats.push(`${i}Б`);
+  }
+
+  seats.push("18В");
+
+  return (
+    <div>
+
+      <BackButton onClick={onBack} />
+
+      <h1>
+        Выберите место
+      </h1>
+
+      <p className="subtitle">
+        35-местный автобус
+      </p>
+
+      <div className="bus">
+
+        <div className="bus-header">
+          ВОДИТЕЛЬ
+        </div>
+
+        <div className="bus-floor">
+
+          {seats.map((seat, index) => {
+
+            const taken =
+              index === 2 ||
+              index === 11 ||
+              index === 24;
+
+            return (
+              <button
+                key={seat}
+                disabled={taken}
+                className={`
+                  seat
+                  ${selectedSeat === seat ? "selected" : ""}
+                  ${taken ? "taken" : ""}
+                `}
+                onClick={() =>
+                  setSelectedSeat(seat)
+                }
+              >
+                {seat}
+              </button>
+            );
+          })}
+
+        </div>
+
+      </div>
+
+      <div className="seat-legend">
+
+        <span>
+          <i className="free"></i>
+          Свободно
+        </span>
+
+        <span>
+          <i className="selected-dot"></i>
+          Выбрано
+        </span>
+
+        <span>
+          <i className="taken-dot"></i>
+          Занято
+        </span>
+
+      </div>
+
+      <button
+        className="primary-button"
+        disabled={!selectedSeat || loading}
+        onClick={onContinue}
+      >
+        {loading
+          ? "Создаём бронирование..."
+          : `Продолжить ${selectedSeat || ""}`}
+      </button>
+
+    </div>
+  );
+}
+
+/* =========================
+   PAYMENT
+========================= */
+
+function Payment({
+  order,
+  timeLeft,
+  formatTime,
+  receipt,
+  setReceipt,
+  onUpload,
+  loading
+}) {
+  const [copied, setCopied] = useState(false);
+
+  function copyPhone() {
+    navigator.clipboard.writeText(
+      "+79654317207"
+    );
+
+    setCopied(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 1500);
+  }
+
+  if (!order) {
+    return null;
+  }
+
+  return (
+    <div>
+
+      <h1>
+        Оплата
+      </h1>
+
+      <div className="timer-card">
+
+        <span>
+          Время на оплату
+        </span>
+
+        <strong>
+          {formatTime(timeLeft)}
+        </strong>
+
+      </div>
+
+      <div className="order-summary">
+
+        <span>
+          Заказ
+        </span>
+
+        <strong>
+          {order.id}
+        </strong>
+
+        <span>
+          {order.route}
+        </span>
+
+        <span>
+          {order.service}
+        </span>
+
+        <span>
+          Место {order.seat}
+        </span>
+
+        <strong>
+          {order.priceRub.toLocaleString("ru-RU")} ₽
+        </strong>
+
+      </div>
+
+      <div className="payment-methods">
+
+        <div className="payment-method active">
+          <div>
+            <strong>
+              СБП / карта РФ
+            </strong>
+
+            <span>
+              Доступно
+            </span>
+          </div>
+
+          <span>
+            ✓
+          </span>
+        </div>
+
+        <div className="payment-method disabled">
+          Visa / Mastercard
+          <small>Скоро</small>
+        </div>
+
+        <div className="payment-method disabled">
+          VietQR
+          <small>Скоро</small>
+        </div>
+
+        <div className="payment-method disabled">
+          Crypto
+          <small>Скоро</small>
+        </div>
+
+      </div>
+
+      <div className="bank-card">
+
+        <span>
+          Переведите
+        </span>
+
+        <strong>
+          {order.priceRub.toLocaleString("ru-RU")} ₽
+        </strong>
+
+        <div className="recipient">
+          <span>
+            Получатель
+          </span>
+
+          <strong>
+            Ирода К.
+          </strong>
+        </div>
+
+        <div className="phone-row">
+
+          <strong>
+            +7 965 431 72 07
+          </strong>
+
+          <button
+            onClick={copyPhone}
+            className="copy-button"
+          >
+            {copied
+              ? "Скопировано"
+              : "Копировать"}
+          </button>
+
+        </div>
+
+        <span>
+          Сбер Банк
+        </span>
+
+      </div>
+
+      <div className="upload-card">
+
+        <h3>
+          После перевода
+        </h3>
+
+        <p>
+          Загрузите скриншот,
+          фотографию или PDF
+          подтверждения оплаты.
+        </p>
+
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          onChange={(e) =>
+            setReceipt(e.target.files?.[0] || null)
+          }
+        />
+
+        {receipt && (
+          <div className="file-selected">
+            ✓ {receipt.name}
+          </div>
+        )}
+
+      </div>
+
+      <button
+        className="primary-button"
+        disabled={!receipt || loading || timeLeft <= 0}
+        onClick={onUpload}
+      >
+        {loading
+          ? "Проверяем..."
+          : "Подтвердить бронирование"}
+      </button>
+
+    </div>
+  );
+}
+
+/* =========================
+   BOOKINGS
+========================= */
+
+function Bookings({ orders }) {
+  const visaRunOrders = orders.filter((order) => {
+    const route = String(order.route || "").toLowerCase();
+    return route.includes("лаос") || route.includes("камбод");
+  });
+
+  function formatValidity(order) {
+    const value =
+      order.validUntil ||
+      order.validityUntil ||
+      order.stampValidUntil;
+
+    if (!value) return null;
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+
+    return date.toLocaleDateString("ru-RU");
+  }
+
+  return (
+    <div className="bookings-page">
+
+      <header className="page-header">
+        <span className="page-kicker">FESTO / ПОЕЗДКИ</span>
+        <h1>Бронирования</h1>
+        <p>
+          Ваши забронированные поездки
+        </p>
+      </header>
+
+      {visaRunOrders.length === 0 ? (
+        <div className="empty-bookings">
+
+          <div className="empty-mark">
+            <span>✦</span>
+          </div>
+
+          <div>
+            <h3>Пока нет поездок</h3>
+            <p>
+              После бронирования поездка
+              появится здесь.
+            </p>
+          </div>
+
+        </div>
+      ) : (
+        <div className="bookings-list">
+
+          {visaRunOrders.map((order) => {
+            const validity = formatValidity(order);
+
+            return (
+              <div
+                className="booking-card"
+                key={order.id}
+              >
+
+                <div className="booking-route-line">
+                  <div className="booking-route-dot"></div>
+
+                  <div>
+                    <span>ВИЗАРАН</span>
+                    <h3>{order.route}</h3>
+                  </div>
+                </div>
+
+                <div className="booking-details">
+
+                  <div>
+                    <span>Услуга</span>
+                    <strong>{order.service}</strong>
+                  </div>
+
+                  <div>
+                    <span>Место</span>
+                    <strong>{order.seat || "—"}</strong>
+                  </div>
+
+                  {validity && (
+                    <div className="booking-validity">
+                      <span>Действует до</span>
+                      <strong>{validity}</strong>
+                    </div>
+                  )}
+
+                </div>
+
+                <div className="booking-bottom">
+                  <span>Стоимость поездки</span>
+                  <strong>
+                    {order.priceRub?.toLocaleString("ru-RU")} ₽
+                  </strong>
+                </div>
+
+              </div>
+            );
+          })}
+
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+/* =========================
+   PROFILE
+========================= */
+
+
+function Profile({
+  user,
+  onPrivacy,
+  onTerms
+}) {
+  return (
+    <div className="profile-page">
+
+      <header className="page-header">
+        <span className="page-kicker">FESTO / АККАУНТ</span>
+        <h1>Профиль</h1>
+        <p>
+          Ваши данные для бронирований
+        </p>
+      </header>
+
+      <section className="profile-identity">
+
+        <div className="profile-avatar">
+          {user?.firstName?.[0] || "U"}
+        </div>
+
+        <div className="profile-identity-copy">
+          <span>ПОЛЬЗОВАТЕЛЬ</span>
+
+          <strong>
+            {user?.firstName || "Пользователь"}
+          </strong>
+
+          <p>
+            {user?.username
+              ? `@${user.username}`
+              : "Telegram username не указан"}
+          </p>
+        </div>
+
+      </section>
+
+      <section className="profile-section">
+
+        <div className="profile-section-heading">
+          <span className="section-number">01</span>
+          <h3>Telegram</h3>
+        </div>
+
+        <div className="profile-row">
+          <span>Ник</span>
+          <strong>
+            {user?.username
+              ? `@${user.username}`
+              : "—"}
+          </strong>
+        </div>
+
+        <div className="profile-row">
+          <span>ID аккаунта</span>
+          <strong>
+            {user?.telegramId || "—"}
+          </strong>
+        </div>
+
+      </section>
+
+      <section className="profile-section">
+
+        <div className="profile-section-heading">
+          <span className="section-number">02</span>
+          <h3>Телефон</h3>
+        </div>
+
+        <div className="profile-row">
+          <span>Номер</span>
+          <strong>
+            {user?.phone || "Не указан"}
+          </strong>
+        </div>
+
+      </section>
+
+      <section className="profile-section">
+
+        <div className="profile-section-heading">
+          <span className="section-number">03</span>
+          <h3>Паспорт</h3>
+        </div>
+
+        {user?.passport ? (
+          <>
+            <div className="profile-row">
+              <span>ФИО</span>
+              <strong>{user.passport.fullName}</strong>
+            </div>
+
+            <div className="profile-row">
+              <span>Дата рождения</span>
+              <strong>{user.passport.birthDate}</strong>
+            </div>
+
+            <div className="profile-row">
+              <span>Загранпаспорт</span>
+              <strong>{user.passport.passportNumber}</strong>
+            </div>
+          </>
+        ) : (
+          <p className="profile-empty">
+            Паспортные данные появятся
+            после первого бронирования.
+          </p>
+        )}
+
+      </section>
+
+      <section className="legal-card">
+
+        <div>
+          <span>Документы</span>
+          <strong>Правила и конфиденциальность</strong>
+        </div>
+
+        <div className="legal-buttons">
+          <button onClick={onPrivacy}>
+            Политика данных
+            <span>→</span>
+          </button>
+
+          <button onClick={onTerms}>
+            Условия сервиса
+            <span>→</span>
+          </button>
+        </div>
+
+      </section>
+
+    </div>
+  );
+}
+
+/* =========================
+   LEGAL
+========================= */
+
+
+function LegalPage({
+  title,
+  url,
+  onBack
+}) {
+  const [text, setText] = useState(
+    "Загрузка..."
+  );
+
+  useEffect(() => {
+
+    fetch(url)
+      .then((res) => res.text())
+      .then(setText)
+      .catch(() =>
+        setText("Не удалось загрузить документ.")
+      );
+
+  }, [url]);
+
+  return (
+    <div>
+
+      <BackButton onClick={onBack} />
+
+      <h1>
+        {title}
+      </h1>
+
+      <div className="legal-text">
+        {text}
+      </div>
+
+    </div>
+  );
+}
+
+/* =========================
+   BOTTOM BAR
+========================= */
+
+function BottomBar({
+  screen,
+  setScreen
+}) {
+  return (
+    <nav className="bottom-bar">
+
+      <button
+        className={
+          screen === "home"
+            ? "nav-active"
+            : ""
+        }
+        onClick={() =>
+          setScreen("home")
+        }
+      >
+        <span>⌂</span>
+        <small>Главная</small>
+      </button>
+
+      <button
+        className={
+          screen === "bookings"
+            ? "nav-active"
+            : ""
+        }
+        onClick={() =>
+          setScreen("bookings")
+        }
+      >
+        <span>▣</span>
+        <small>Бронирования</small>
+      </button>
+
+      <button
+        className={
+          screen === "profile"
+            ? "nav-active"
+            : ""
+        }
+        onClick={() =>
+          setScreen("profile")
+        }
+      >
+        <span>◯</span>
+        <small>Профиль</small>
+      </button>
+
+    </nav>
+  );
+}
+
+/* =========================
+   HELPERS
+========================= */
+
+function BackButton({ onClick }) {
+  return (
+    <button
+      className="back-button"
+      onClick={onClick}
+    >
+      ← Назад
+    </button>
+  );
+}
+
+createRoot(
+  document.getElementById("root")
+).render(
+  <App />
+);
