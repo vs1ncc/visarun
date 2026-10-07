@@ -71,7 +71,6 @@ function validateTelegramInitData(initData) {
 
   try {
     const params = new URLSearchParams(initData);
-
     const hash = params.get("hash");
 
     if (!hash) {
@@ -80,7 +79,8 @@ function validateTelegramInitData(initData) {
 
     params.delete("hash");
 
-    const dataCheckString = [...params.entries()]
+    const dataCheckString = Array
+      .from(params.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, value]) => `${key}=${value}`)
       .join("\n");
@@ -95,7 +95,14 @@ function validateTelegramInitData(initData) {
       .update(dataCheckString)
       .digest("hex");
 
-    if (calculatedHash !== hash) {
+    if (
+      calculatedHash.length !== hash.length ||
+      !crypto.timingSafeEqual(
+        Buffer.from(calculatedHash, "utf8"),
+        Buffer.from(hash, "utf8")
+      )
+    ) {
+      console.error("Telegram initData hash mismatch");
       return null;
     }
 
@@ -106,11 +113,15 @@ function validateTelegramInitData(initData) {
     }
 
     return JSON.parse(userString);
-  } catch {
+
+  } catch (error) {
+    console.error(
+      "Telegram initData validation error:",
+      error.message
+    );
     return null;
   }
 }
-
 /* =========================
    AUTH
 ========================= */
