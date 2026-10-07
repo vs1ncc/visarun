@@ -1700,3 +1700,8 @@ input:focus {
   display: block;
   object-fit: cover;
 }
+
+/* Move page content 50px upward */
+.content {
+  transform: translateY(-50px);
+}
