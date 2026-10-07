@@ -63,60 +63,336 @@ function App() {
   }, []);
 
   async function authenticate() {
-  try {
-    if (!tg?.initData) {
+    try {
+      if (!tg?.initData) {
+        return;
+      }
+
+      const response = await fetch(`${API}/auth`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          initData: tg.initData
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const telegramUser = tg?.initDataUnsafe?.user;
+
+        const mergedUser = {
+          ...data.user,
+          telegramId: telegramUser?.id || data.user.telegramId,
+          username: telegramUser?.username || data.user.username || "",
+          firstName: telegramUser?.first_name || data.user.firstName || "",
+          lastName: telegramUser?.last_name || data.user.lastName || "",
+          photoUrl: telegramUser?.photo_url || data.user.photoUrl || ""
+        };
+
+        setUser(mergedUser);
+        loadOrders(mergedUser.telegramId);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function loadOrders(telegramId) {
+    try {
+      const response = await fetch(
+        `${API}/orders/user/${telegramId}`
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setOrders(data.orders);
+      }
+    } catch {}
+  }
+
+  function openRoute(routeName) {
+    setRoute(routeName);
+    setScreen("service");
+  }
+
+  function openService(serviceType) {
+    setService(SERVICES[serviceType]);
+    setScreen("passport");
+  }
+
+  function openPrivacy() {
+    setScreen("privacy");
+  }
+
+  function openTerms() {
+    setScreen("terms");
+  }
+
+  async function savePassportAndContinue() {
+    if (!passport.fullName) {
+      alert("Введите ФИО");
       return;
     }
 
-    const telegramUser = tg?.initDataUnsafe?.user;
-
-    const response = await fetch(`${API}/auth`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        initData: tg.initData
-      })
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-      const mergedUser = {
-        ...data.user,
-
-        telegramId:
-          telegramUser?.id ||
-          data.user.telegramId,
-
-        username:
-          telegramUser?.username ||
-          data.user.username ||
-          "",
-
-        firstName:
-          telegramUser?.first_name ||
-          data.user.firstName ||
-          "",
-
-        lastName:
-          telegramUser?.last_name ||
-          data.user.lastName ||
-          "",
-
-        photoUrl:
-          telegramUser?.photo_url ||
-          data.user.photoUrl ||
-          ""
-      };
-
-      setUser(mergedUser);
-      loadOrders(mergedUser.telegramId);
+    if (!passport.birthDate) {
+      alert("Введите дату рождения");
+      return;
     }
-  } catch (error) {
-    console.error("Telegram authentication error:", error);
+
+    if (!passport.passportNumber) {
+      alert("Введите номер загранпаспорта");
+      return;
+    }
+
+    if (!consent) {
+      alert(
+        "Необходимо согласиться с политикой обработки персональных данных"
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        `${API}/profile/passport`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            telegramId: user.telegramId,
+            ...passport,
+            consent: true
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error);
+      }
+
+      setScreen("seats");
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
   }
+
+  async function createBooking() {
+    if (!selectedSeat) {
+      alert("Выберите место");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          telegramId: user.telegramId,
+          route,
+          service: service.title,
+          priceRub: service.priceRub,
+          priceVnd: service.priceVnd,
+          seat: selectedSeat
+        })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error);
+      }
+
+      setOrder(data.order);
+
+      setTimeLeft(1200);
+
+      setScreen("payment");
+
+      loadOrders(user.telegramId);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (screen !== "payment") return;
+
+    if (timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((value) => value - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [screen, timeLeft]);
+
+  function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+
+    return `${String(minutes).padStart(2, "0")}:${String(
+      secs
+    ).padStart(2, "0")}`;
+  }
+
+  async function uploadReceipt() {
+    if (!receipt) {
+      alert("Выберите файл подтверждения оплаты");
+      return;
+    }
+
+    const formData = new FormData();
+
+    formData.append("receipt", receipt);
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        `${API}/orders/${order.id}/receipt`,
+        {
+          method: "POST",
+          body: formData
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error);
+      }
+
+      alert(
+        "Подтверждение отправлено. Ожидайте проверки оплаты."
+      );
+
+      loadOrders(user.telegramId);
+
+      setScreen("bookings");
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function formatRub(value) {
+    return `${value.toLocaleString("ru-RU")} ₽`;
+  }
+
+  return (
+    <div className="app">
+
+      <main className="content">
+
+        {screen === "home" && (
+          <Home
+            onRoute={openRoute}
+            user={user}
+          />
+        )}
+
+        {screen === "service" && (
+          <ServiceSelection
+            route={route}
+            onBack={() => setScreen("home")}
+            onSelect={openService}
+          />
+        )}
+
+        {screen === "passport" && (
+          <Passport
+            passport={passport}
+            setPassport={setPassport}
+            consent={consent}
+            setConsent={setConsent}
+            onBack={() => setScreen("service")}
+            onPrivacy={openPrivacy}
+            onContinue={savePassportAndContinue}
+            loading={loading}
+          />
+        )}
+
+        {screen === "seats" && (
+          <SeatSelection
+            selectedSeat={selectedSeat}
+            setSelectedSeat={setSelectedSeat}
+            onBack={() => setScreen("passport")}
+            onContinue={createBooking}
+            loading={loading}
+          />
+        )}
+
+        {screen === "payment" && (
+          <Payment
+            order={order}
+            timeLeft={timeLeft}
+            formatTime={formatTime}
+            receipt={receipt}
+            setReceipt={setReceipt}
+            onUpload={uploadReceipt}
+            loading={loading}
+          />
+        )}
+
+        {screen === "bookings" && (
+          <Bookings
+            orders={orders}
+          />
+        )}
+
+        {screen === "profile" && (
+          <Profile
+            user={user}
+            onPrivacy={openPrivacy}
+            onTerms={openTerms}
+          />
+        )}
+
+        {screen === "privacy" && (
+          <LegalPage
+            title="Политика обработки персональных данных"
+            url={`${API}/legal/privacy`}
+            onBack={() => setScreen("profile")}
+          />
+        )}
+
+        {screen === "terms" && (
+          <LegalPage
+            title="Условия сервиса"
+            url={`${API}/legal/terms`}
+            onBack={() => setScreen("profile")}
+          />
+        )}
+
+      </main>
+
+      {["home", "bookings", "profile"].includes(screen) && (
+        <BottomBar
+          screen={screen}
+          setScreen={setScreen}
+        />
+      )}
+
+    </div>
+  );
 }
 
 /* =========================
@@ -125,67 +401,78 @@ function App() {
 
 function Home({ onRoute, user }) {
   return (
-    <div>
+    <div className="home-page">
 
       <header className="top-header">
-
-        <div>
-          <div className="eyebrow">
-            FESTO
-          </div>
-
-          <h1>
-            Визаран
-          </h1>
-
-          <p>
-            Быстрое бронирование поездки
-            из Нячанга
-          </p>
+        <div className="brand-block">
+          <div className="eyebrow">FESTO</div>
+          <h1>Визаран</h1>
+          <p>Из Нячанга в Лаос и Камбоджу</p>
         </div>
 
         <div className="telegram-avatar">
-          {user?.firstName?.[0] || "F"}
+          {user?.photoUrl ? (
+            <img
+              src={user.photoUrl}
+              alt=""
+              className="telegram-avatar-image"
+            />
+          ) : (
+            user?.firstName?.[0] || "F"
+          )}
         </div>
-
       </header>
 
       <section className="hero">
-
         <div className="hero-glow"></div>
 
-        <span className="hero-label">
-          ПОЕЗДКИ ИЗ НЯЧАНГА
-        </span>
+        <div className="hero-content">
+          <span className="hero-label">ВИЗАРАН ИЗ НЯЧАНГА</span>
 
-        <h2>
-          Продлите пребывание
-          <br />
-          без лишних хлопот
-        </h2>
+          <h2>
+            Быстрое
+            <br />
+            бронирование поездки
+          </h2>
 
-        <p>
-          Выберите направление,
-          услугу и место в автобусе.
-        </p>
+          <p>
+            Выберите направление и подходящий
+            вариант пребывания.
+          </p>
+        </div>
 
+        <div className="hero-orb">
+          <span>→</span>
+        </div>
       </section>
 
-      <div className="section-title">
-        Направления
+      <div className="section-heading">
+        <div>
+          <span>01</span>
+          <h2>Направления</h2>
+        </div>
+        <p>Выберите страну</p>
       </div>
 
-      <RouteCard
-        title="Нячанг — Лаос"
-        description="Продление штампа или виза на 90 дней"
-        onClick={() => onRoute(ROUTES.LAOS)}
-      />
+      <div className="routes-list">
 
-      <RouteCard
-        title="Нячанг — Камбоджа"
-        description="Продление штампа или виза на 90 дней"
-        onClick={() => onRoute(ROUTES.CAMBODIA)}
-      />
+        <RouteCard
+          title="Лаос"
+          route="Нячанг — Лаос"
+          description="Штамп 45 дней или виза на 90 дней"
+          accent="laos"
+          onClick={() => onRoute(ROUTES.LAOS)}
+        />
+
+        <RouteCard
+          title="Камбоджа"
+          route="Нячанг — Камбоджа"
+          description="Штамп 45 дней или виза на 90 дней"
+          accent="cambodia"
+          onClick={() => onRoute(ROUTES.CAMBODIA)}
+        />
+
+      </div>
 
     </div>
   );
@@ -193,24 +480,33 @@ function Home({ onRoute, user }) {
 
 function RouteCard({
   title,
+  route,
   description,
+  accent,
   onClick
 }) {
   return (
     <button
-      className="route-card"
+      className={`route-card route-card-${accent}`}
       onClick={onClick}
     >
+      <div className="route-card-main">
 
-      <div>
-        <h3>{title}</h3>
-        <p>{description}</p>
+        <div className="route-icon">
+          <span>{accent === "laos" ? "🇱🇦" : "🇰🇭"}</span>
+        </div>
+
+        <div className="route-copy">
+          <span className="route-name">{route}</span>
+          <h3>{title}</h3>
+          <p>{description}</p>
+        </div>
+
       </div>
 
-      <span className="arrow">
-        →
-      </span>
-
+      <div className="route-arrow">
+        <span>→</span>
+      </div>
     </button>
   );
 }
@@ -218,6 +514,7 @@ function RouteCard({
 /* =========================
    SERVICE
 ========================= */
+
 
 function ServiceSelection({
   route,
@@ -751,81 +1048,116 @@ function Payment({
 ========================= */
 
 function Bookings({ orders }) {
+  const visaRunOrders = orders.filter((order) => {
+    const route = String(order.route || "").toLowerCase();
+    return route.includes("лаос") || route.includes("камбод");
+  });
+
+  function formatValidity(order) {
+    const value =
+      order.validUntil ||
+      order.validityUntil ||
+      order.stampValidUntil;
+
+    if (!value) return null;
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+
+    return date.toLocaleDateString("ru-RU");
+  }
+
   return (
-    <div>
+    <div className="bookings-page">
 
-      <h1>
-        Бронирования
-      </h1>
+      <header className="page-header">
+        <span className="page-kicker">FESTO / ПОЕЗДКИ</span>
+        <h1>Бронирования</h1>
+        <p>
+          Ваши забронированные поездки
+        </p>
+      </header>
 
-      {orders.length === 0 ? (
-        <div className="empty">
-          <div className="empty-icon">
-            ✦
+      {visaRunOrders.length === 0 ? (
+        <div className="empty-bookings">
+
+          <div className="empty-mark">
+            <span>✦</span>
           </div>
 
-          <h3>
-            Пока нет бронирований
-          </h3>
+          <div>
+            <h3>Пока нет поездок</h3>
+            <p>
+              После бронирования поездка
+              появится здесь.
+            </p>
+          </div>
 
-          <p>
-            Здесь появятся ваши поездки.
-          </p>
         </div>
       ) : (
-        orders.map((order) => (
-          <div
-            className="booking-card"
-            key={order.id}
-          >
+        <div className="bookings-list">
 
-            <div className="booking-top">
+          {visaRunOrders.map((order) => {
+            const validity = formatValidity(order);
 
-              <strong>
-                {order.route}
-              </strong>
-
-              <span
-                className={`status ${order.status}`}
+            return (
+              <div
+                className="booking-card"
+                key={order.id}
               >
-                {getStatus(order.status)}
-              </span>
 
-            </div>
+                <div className="booking-route-line">
+                  <div className="booking-route-dot"></div>
 
-            <p>
-              {order.service}
-            </p>
+                  <div>
+                    <span>ВИЗАРАН</span>
+                    <h3>{order.route}</h3>
+                  </div>
+                </div>
 
-            <div className="booking-info">
-              Место {order.seat}
-            </div>
+                <div className="booking-details">
 
-            <div className="booking-price">
-              {order.priceRub.toLocaleString("ru-RU")} ₽
-            </div>
+                  <div>
+                    <span>Услуга</span>
+                    <strong>{order.service}</strong>
+                  </div>
 
-          </div>
-        ))
+                  <div>
+                    <span>Место</span>
+                    <strong>{order.seat || "—"}</strong>
+                  </div>
+
+                  {validity && (
+                    <div className="booking-validity">
+                      <span>Действует до</span>
+                      <strong>{validity}</strong>
+                    </div>
+                  )}
+
+                </div>
+
+                <div className="booking-bottom">
+                  <span>Стоимость поездки</span>
+                  <strong>
+                    {order.priceRub?.toLocaleString("ru-RU")} ₽
+                  </strong>
+                </div>
+
+              </div>
+            );
+          })}
+
+        </div>
       )}
 
     </div>
   );
 }
 
-function getStatus(status) {
-  const statuses = {
-    awaiting_payment: "Ожидает оплаты",
-    payment_check: "Проверка оплаты",
-    confirmed: "Подтверждено"
-  };
-
-  return statuses[status] || status;
-}
-
 /* =========================
    PROFILE
 ========================= */
+
 
 function Profile({
   user,
@@ -833,45 +1165,47 @@ function Profile({
   onTerms
 }) {
   return (
-    <div>
+    <div className="profile-page">
 
-      <h1>
-        Профиль
-      </h1>
+      <header className="page-header">
+        <span className="page-kicker">FESTO / АККАУНТ</span>
+        <h1>Профиль</h1>
+        <p>
+          Ваши данные для бронирований
+        </p>
+      </header>
 
-      <div className="profile-card">
+      <section className="profile-identity">
 
         <div className="profile-avatar">
           {user?.firstName?.[0] || "U"}
         </div>
 
-        <div>
+        <div className="profile-identity-copy">
+          <span>ПОЛЬЗОВАТЕЛЬ</span>
 
           <strong>
             {user?.firstName || "Пользователь"}
           </strong>
 
-          <span>
+          <p>
             {user?.username
               ? `@${user.username}`
-              : "Username не указан"}
-          </span>
-
+              : "Telegram username не указан"}
+          </p>
         </div>
 
-      </div>
+      </section>
 
-      <div className="profile-section">
+      <section className="profile-section">
 
-        <h3>
-          Telegram
-        </h3>
+        <div className="profile-section-heading">
+          <span className="section-number">01</span>
+          <h3>Telegram</h3>
+        </div>
 
         <div className="profile-row">
-          <span>
-            Ник
-          </span>
-
+          <span>Ник</span>
           <strong>
             {user?.username
               ? `@${user.username}`
@@ -880,96 +1214,83 @@ function Profile({
         </div>
 
         <div className="profile-row">
-          <span>
-            ID
-          </span>
-
+          <span>ID аккаунта</span>
           <strong>
             {user?.telegramId || "—"}
           </strong>
         </div>
 
-      </div>
+      </section>
 
-      <div className="profile-section">
+      <section className="profile-section">
 
-        <h3>
-          Телефон
-        </h3>
+        <div className="profile-section-heading">
+          <span className="section-number">02</span>
+          <h3>Телефон</h3>
+        </div>
 
         <div className="profile-row">
-
-          <span>
-            Номер
-          </span>
-
+          <span>Номер</span>
           <strong>
             {user?.phone || "Не указан"}
           </strong>
-
         </div>
 
-      </div>
+      </section>
 
-      <div className="profile-section">
+      <section className="profile-section">
 
-        <h3>
-          Паспортные данные
-        </h3>
+        <div className="profile-section-heading">
+          <span className="section-number">03</span>
+          <h3>Паспорт</h3>
+        </div>
 
         {user?.passport ? (
           <>
             <div className="profile-row">
-              <span>
-                ФИО
-              </span>
-
-              <strong>
-                {user.passport.fullName}
-              </strong>
+              <span>ФИО</span>
+              <strong>{user.passport.fullName}</strong>
             </div>
 
             <div className="profile-row">
-              <span>
-                Дата рождения
-              </span>
-
-              <strong>
-                {user.passport.birthDate}
-              </strong>
+              <span>Дата рождения</span>
+              <strong>{user.passport.birthDate}</strong>
             </div>
 
             <div className="profile-row">
-              <span>
-                Загранпаспорт
-              </span>
-
-              <strong>
-                {user.passport.passportNumber}
-              </strong>
+              <span>Загранпаспорт</span>
+              <strong>{user.passport.passportNumber}</strong>
             </div>
           </>
         ) : (
-          <p className="muted">
+          <p className="profile-empty">
             Паспортные данные появятся
             после первого бронирования.
           </p>
         )}
 
-      </div>
+      </section>
 
-      <div className="legal-links">
+      <section className="legal-card">
 
-        <button onClick={onPrivacy}>
-          Политика обработки
-          персональных данных
-        </button>
+        <div>
+          <span>Документы</span>
+          <strong>Правила и конфиденциальность</strong>
+        </div>
 
-        <button onClick={onTerms}>
-          Условия сервиса
-        </button>
+        <div className="legal-buttons">
+          <button onClick={onPrivacy}>
+            Политика данных
+            <span>→</span>
+          </button>
 
-      </div>
+          <button onClick={onTerms}>
+            Условия сервиса
+            <span>→</span>
+          </button>
+        </div>
+
+      </section>
 
     </div>
   );
@@ -978,6 +1299,7 @@ function Profile({
 /* =========================
    LEGAL
 ========================= */
+
 
 function LegalPage({
   title,
@@ -1037,7 +1359,13 @@ function BottomBar({
           setScreen("home")
         }
       >
-        <span>⌂</span>
+        <span className="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M3.5 10.8 12 3.8l8.5 7" />
+            <path d="M5.5 9.8v9.7h13V9.8" />
+            <path d="M9.5 19.5v-5h5v5" />
+          </svg>
+        </span>
         <small>Главная</small>
       </button>
 
@@ -1051,7 +1379,14 @@ function BottomBar({
           setScreen("bookings")
         }
       >
-        <span>▣</span>
+        <span className="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M5 7.5h14v11H5z" />
+            <path d="M8 7.5V5h8v2.5" />
+            <path d="M8 12h8" />
+            <path d="M8 15.5h5" />
+          </svg>
+        </span>
         <small>Бронирования</small>
       </button>
 
@@ -1065,7 +1400,12 @@ function BottomBar({
           setScreen("profile")
         }
       >
-        <span>◯</span>
+        <span className="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="3.2" />
+            <path d="M5.5 20c.8-3.3 3.1-5.2 6.5-5.2s5.7 1.9 6.5 5.2" />
+          </svg>
+        </span>
         <small>Профиль</small>
       </button>
 
