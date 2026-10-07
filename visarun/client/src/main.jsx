@@ -1240,7 +1240,15 @@ function Profile({
       <section className="profile-identity">
 
         <div className="profile-avatar">
-          {user?.firstName?.[0] || "U"}
+          {user?.photoUrl ? (
+            <img
+              src={user.photoUrl}
+              alt=""
+              className="profile-avatar-image"
+            />
+          ) : (
+            user?.firstName?.[0] || "U"
+          )}
         </div>
 
         <div className="profile-identity-copy">
