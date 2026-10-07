@@ -18,7 +18,10 @@ app.use(express.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 3000;
 
-const DATA_DIR = path.join(process.cwd(), "server", "data");
+const DATA_DIR = process.env.VERCEL === "1"
+  ? path.join("/tmp", "festo-vizaran-data")
+  : path.join(process.cwd(), "server", "data");
+
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
