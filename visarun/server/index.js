@@ -867,8 +867,9 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`
+if (process.env.VERCEL !== "1") {
+  app.listen(PORT, () => {
+    console.log(`
 ========================================
 FESTO VIZARAN SERVER
 ========================================
@@ -883,4 +884,7 @@ ${openai ? "CONNECTED" : "NOT CONFIGURED"}
 
 ========================================
 `);
-});
+  });
+}
+
+export default app;
