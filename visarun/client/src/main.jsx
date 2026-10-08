@@ -36,6 +36,7 @@ function App() {
   const [user, setUser] = useState(null);
 
   const [route, setRoute] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
   const [service, setService] = useState(null);
 
   const [passport, setPassport] = useState({
@@ -178,12 +179,14 @@ function App() {
 
   function openRoute(routeName) {
     setRoute(routeName);
+    setSelectedDate(null);
     setScreen("service");
   }
 
   function openService(serviceType) {
     setService(SERVICES[serviceType]);
-    setScreen("passport");
+    setSelectedDate(null);
+    setScreen("calendar");
   }
 
   function openPrivacy() {
@@ -379,6 +382,16 @@ function App() {
           />
         )}
 
+        {screen === "calendar" && (
+          <CalendarSelection
+            route={route}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            onBack={() => setScreen("service")}
+            onContinue={() => setScreen("passport")}
+          />
+        )}
+
         {screen === "passport" && (
           <Passport
             passport={passport}
@@ -394,6 +407,8 @@ function App() {
 
         {screen === "seats" && (
           <SeatSelection
+            route={route}
+            service={service}
             selectedSeat={selectedSeat}
             setSelectedSeat={setSelectedSeat}
             onBack={() => setScreen("passport")}
@@ -679,10 +694,6 @@ function ServiceCard({
 
       </div>
 
-      <span className="arrow">
-        →
-      </span>
-
     </button>
   );
 }
@@ -808,101 +819,370 @@ function Passport({
    SEATS
 ========================= */
 
+
+function CalendarSelection({
+  route,
+  selectedDate,
+  setSelectedDate,
+  onBack,
+  onContinue
+}) {
+  const dates = [
+    { day: "08", weekday: "ЧТ", month: "ОКТ", available: true },
+    { day: "09", weekday: "ПТ", month: "ОКТ", available: true },
+    { day: "10", weekday: "СБ", month: "ОКТ", available: false },
+    { day: "11", weekday: "ВС", month: "ОКТ", available: true },
+    { day: "12", weekday: "ПН", month: "ОКТ", available: false },
+    { day: "13", weekday: "ВТ", month: "ОКТ", available: true },
+    { day: "14", weekday: "СР", month: "ОКТ", available: true },
+    { day: "15", weekday: "ЧТ", month: "ОКТ", available: false },
+    { day: "16", weekday: "ПТ", month: "ОКТ", available: true },
+    { day: "17", weekday: "СБ", month: "ОКТ", available: true },
+    { day: "18", weekday: "ВС", month: "ОКТ", available: false },
+    { day: "19", weekday: "ПН", month: "ОКТ", available: true }
+  ];
+
+  return (
+    <div className="vizaran-calendar-page">
+
+      <div className="vizaran-calendar-top">
+        <button
+          type="button"
+          className="back-button vizaran-calendar-back"
+          onClick={onBack}
+          aria-label="Назад"
+        >
+          ←
+        </button>
+
+        <div className="vizaran-calendar-heading">
+          <span className="vizaran-calendar-kicker">
+            ВЫБЕРИТЕ ДАТУ
+          </span>
+
+          <h1>{route || "Выбранный рейс"}</h1>
+
+          <p>
+            Выберите доступную дату поездки
+          </p>
+        </div>
+
+        <div className="vizaran-calendar-step">
+          <strong>02</strong>
+          <span>ДАТА</span>
+        </div>
+      </div>
+
+      <div className="vizaran-calendar-card">
+
+        <div className="vizaran-calendar-month">
+          <button type="button" aria-label="Предыдущий месяц">‹</button>
+
+          <div>
+            <strong>ОКТЯБРЬ 2026</strong>
+            <span>Доступные даты рейса</span>
+          </div>
+
+          <button type="button" aria-label="Следующий месяц">›</button>
+        </div>
+
+        <div className="vizaran-calendar-week">
+          {["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"].map(day => (
+            <span key={day}>{day}</span>
+          ))}
+        </div>
+
+        <div className="vizaran-calendar-grid">
+          {dates.map(date => {
+            const value = `${date.day}.${date.month}.2026`;
+            const selected = selectedDate === value;
+
+            return (
+              <button
+                key={value}
+                type="button"
+                disabled={!date.available}
+                className={[
+                  "vizaran-calendar-day",
+                  date.available ? "available" : "unavailable",
+                  selected ? "selected" : ""
+                ].join(" ")}
+                onClick={() => date.available && setSelectedDate(value)}
+              >
+                <span className="calendar-day-weekday">
+                  {date.weekday}
+                </span>
+
+                <strong>{date.day}</strong>
+
+                <span className="calendar-day-month">
+                  {date.month}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="vizaran-calendar-legend">
+          <div>
+            <span className="calendar-dot available-dot"></span>
+            <span>Рейс доступен</span>
+          </div>
+
+          <div>
+            <span className="calendar-dot unavailable-dot"></span>
+            <span>Нет рейса</span>
+          </div>
+
+          <div>
+            <span className="calendar-dot selected-dot"></span>
+            <span>Выбрано</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div className="vizaran-calendar-bottom">
+        <div className="calendar-selected-info">
+          <span>ВЫБРАННАЯ ДАТА</span>
+          <strong>{selectedDate || "—"}</strong>
+        </div>
+
+        <button
+          type="button"
+          className="vizaran-calendar-submit"
+          disabled={!selectedDate}
+          onClick={onContinue}
+        >
+          <span>ПРОДОЛЖИТЬ</span>
+          <b>→</b>
+        </button>
+      </div>
+
+    </div>
+  );
+}
+
 function SeatSelection({
+  route,
+  service,
   selectedSeat,
   setSelectedSeat,
   onBack,
   onContinue,
   loading
 }) {
-  const seats = [];
+  const seats = Array.from({ length: 8 }, (_, i) => ({
+    upperLeft: `${i + 1}A`,
+    lowerLeft: `${i + 1}B`,
+    upperRight: `${i + 9}A`,
+    lowerRight: `${i + 9}B`
+  }));
 
-  for (let i = 1; i <= 18; i++) {
-    seats.push(`${i}А`);
-    seats.push(`${i}Б`);
+  const takenSeats = new Set([
+    "2B",
+    "6A",
+    "11B",
+    "15A"
+  ]);
+
+  function renderSeat(seat, type) {
+    const taken = takenSeats.has(seat);
+
+    return (
+      <button
+        key={seat}
+        type="button"
+        disabled={taken}
+        className={[
+          "v-seat",
+          type === "upper" ? "v-seat-upper" : "v-seat-lower",
+          selectedSeat === seat ? "v-seat-selected" : "",
+          taken ? "v-seat-taken" : ""
+        ].join(" ")}
+        onClick={() => setSelectedSeat(seat)}
+      >
+        <span>{seat.replace(/[AB]/, "")}</span>
+        <b>{type === "upper" ? "A" : "B"}</b>
+      </button>
+    );
   }
 
-  seats.push("18В");
-
   return (
-    <div>
+    <div className="vizaran-seat-page">
+      <div className="vizaran-seat-top">
+        <BackButton onClick={onBack} />
 
-      <BackButton onClick={onBack} />
-
-      <h1>
-        Выберите место
-      </h1>
-
-      <p className="subtitle">
-        35-местный автобус
-      </p>
-
-      <div className="bus">
-
-        <div className="bus-header">
-          ВОДИТЕЛЬ
+        <div className="vizaran-trip">
+          <span className="vizaran-trip-label">ВАШ МАРШРУТ</span>
+          <h1>{route || "Выбранный маршрут"}</h1>
+          <p>Выберите место в автобусе</p>
         </div>
 
-        <div className="bus-floor">
+        <div className="vizaran-step">
+          <span>01</span>
+          <small>МЕСТО</small>
+        </div>
+      </div>
 
-          {seats.map((seat, index) => {
+      <div className="vizaran-seat-content">
 
-            const taken =
-              index === 2 ||
-              index === 11 ||
-              index === 24;
+        <section className="vizaran-bus-wrap">
+          <div className="vizaran-bus">
 
-            return (
-              <button
-                key={seat}
-                disabled={taken}
-                className={`
-                  seat
-                  ${selectedSeat === seat ? "selected" : ""}
-                  ${taken ? "taken" : ""}
-                `}
-                onClick={() =>
-                  setSelectedSeat(seat)
-                }
-              >
-                {seat}
-              </button>
-            );
-          })}
+            <div className="vizaran-bus-front">
+              <div className="vizaran-front-window"></div>
+              <div className="vizaran-driver">
+                <span></span>
+                ВОДИТЕЛЬ
+              </div>
+            </div>
 
+            <div className="vizaran-bus-cabin">
+              <div className="vizaran-cabin-head">
+                <span>САЛОН</span>
+                <i>32 МЕСТА</i>
+              </div>
+
+              <div className="vizaran-seat-labels">
+                <span>A</span>
+                <span>B</span>
+                <span>A</span>
+                <span>B</span>
+              </div>
+
+              <div className="vizaran-seat-grid">
+                {seats.map((row, index) => (
+                  <React.Fragment key={row.upperLeft}>
+                    {renderSeat(row.upperLeft, "upper")}
+                    {renderSeat(row.lowerLeft, "lower")}
+                    {renderSeat(row.upperRight, "upper")}
+                    {renderSeat(row.lowerRight, "lower")}
+
+                    {index === 7 && (
+                      <div className="vizaran-bus-service">
+                        <span>WC</span>
+                        <small>ТУАЛЕТ</small>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            <div className="vizaran-bus-rear">
+              <span>ЗАДНЯЯ ЧАСТЬ</span>
+            </div>
+
+          </div>
+        </section>
+
+        <aside className="vizaran-seat-sidebar">
+
+          <div className="vizaran-selected-card">
+            <span className="vizaran-card-label">ВЫБРАННОЕ МЕСТО</span>
+
+            <div className="vizaran-selected-number">
+              {selectedSeat || "—"}
+            </div>
+
+            <p>
+              {selectedSeat
+                ? "Место закреплено за вами"
+                : "Выберите свободное место слева"}
+            </p>
+          </div>
+
+          <div className="vizaran-info-card">
+            <span className="vizaran-card-label">В АВТОБУСЕ</span>
+
+            <div className="vizaran-feature">
+              <span className="vizaran-feature-icon vizaran-wifi-icon" aria-hidden="true">
+  <svg viewBox="0 0 24 24" fill="none">
+    <path d="M3 8.5C8.5 4 15.5 4 21 8.5" />
+    <path d="M6.5 12C10.2 9.2 13.8 9.2 17.5 12" />
+    <path d="M10 15.5C11.3 14.5 12.7 14.5 14 15.5" />
+    <circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none" />
+  </svg>
+</span>
+              <div>
+                <strong>Wi-Fi</strong>
+                <small>Бесплатный интернет</small>
+              </div>
+            </div>
+
+            <div className="vizaran-feature">
+              <span className="vizaran-feature-icon vizaran-ac-icon" aria-hidden="true">❄</span>
+              <div>
+                <strong>Кондиционер</strong>
+                <small>Комфортная температура</small>
+              </div>
+            </div>
+
+            <div className="vizaran-feature">
+              <span className="vizaran-feature-icon vizaran-wc-icon" aria-hidden="true">WC</span>
+              <div>
+                <strong>Туалет</strong>
+                <small>В салоне автобуса</small>
+              </div>
+            </div>
+          </div>
+
+          <div className="vizaran-legend">
+            <span className="vizaran-card-label">МЕСТА</span>
+
+            <div>
+              <i className="free"></i>
+              <span>Свободно</span>
+            </div>
+
+            <div>
+              <i className="chosen"></i>
+              <span>Выбрано</span>
+            </div>
+
+            <div>
+              <i className="busy"></i>
+              <span>Занято</span>
+            </div>
+          </div>
+
+        </aside>
+      </div>
+
+      <div className="vizaran-seat-bottom">
+        <div className="vizaran-price">
+          {selectedSeat ? (
+            <>
+              <span>К ОПЛАТЕ</span>
+              <strong>
+                {service?.priceRub
+                  ? service.priceRub.toLocaleString("ru-RU")
+                  : "—"} ₽
+              </strong>
+            </>
+          ) : (
+            <>
+              <span>ВЫБЕРИТЕ МЕСТО</span>
+              <strong>—</strong>
+            </>
+          )}
         </div>
 
+        <div className="vizaran-bottom-seat">
+          <span>МЕСТО</span>
+          <strong>{selectedSeat || "—"}</strong>
+        </div>
+
+        <button
+          className="vizaran-seat-submit"
+          disabled={!selectedSeat || loading}
+          onClick={onContinue}
+        >
+          {loading ? "БРОНИРУЕМ..." : "ПРОДОЛЖИТЬ"}
+          <span>→</span>
+        </button>
       </div>
-
-      <div className="seat-legend">
-
-        <span>
-          <i className="free"></i>
-          Свободно
-        </span>
-
-        <span>
-          <i className="selected-dot"></i>
-          Выбрано
-        </span>
-
-        <span>
-          <i className="taken-dot"></i>
-          Занято
-        </span>
-
-      </div>
-
-      <button
-        className="primary-button"
-        disabled={!selectedSeat || loading}
-        onClick={onContinue}
-      >
-        {loading
-          ? "Создаём бронирование..."
-          : `Продолжить ${selectedSeat || ""}`}
-      </button>
-
     </div>
   );
 }
@@ -1493,7 +1773,7 @@ function BackButton({ onClick }) {
       className="back-button"
       onClick={onClick}
     >
-      ← Назад
+      ←
     </button>
   );
 }
