@@ -254,10 +254,22 @@ function App() {
         }
       );
 
-      const data = await response.json();
+      const text = await response.text();
 
-      if (!data.success) {
-        throw new Error(data.error);
+      let data;
+
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          `Ошибка сервера (${response.status}): ${text || "пустой ответ"}`
+        );
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || `Ошибка сервера (${response.status})`
+        );
       }
 
       setScreen("calendar");
