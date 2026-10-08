@@ -5432,3 +5432,103 @@ body:has(.passport-page) .passport-page .primary-button {
     box-sizing: border-box;
   }
 }
+
+/* =========================================================
+   FINAL BUS LAYOUT
+   ========================================================= */
+
+/* WC — справа внизу, на ширину двух правых рядов */
+.vizaran-bus-service {
+  width: calc(50% - 4px) !important;
+  margin: 8px 3px 0 auto !important;
+  box-sizing: border-box;
+  grid-column: 3 / 4;
+}
+
+/* Нижняя панель — отдельный центрированный блок */
+.vizaran-seat-bottom {
+  position: relative !important;
+  inset: auto !important;
+  float: none !important;
+
+  width: calc(100% - 32px) !important;
+  max-width: 760px !important;
+  margin: 24px auto 24px !important;
+
+  box-sizing: border-box;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+
+  padding: 14px 18px !important;
+  gap: 22px;
+
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  background: rgba(15,15,22,.94);
+  box-shadow:
+    0 14px 40px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+/* Чтобы отдельные элементы больше не разъезжались */
+.vizaran-seat-bottom .vizaran-price {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.vizaran-seat-bottom .vizaran-bottom-seat {
+  flex: 0 0 auto;
+  min-width: 70px;
+}
+
+.vizaran-seat-bottom .vizaran-seat-submit {
+  flex: 0 1 240px;
+  min-width: 0;
+  max-width: 240px;
+}
+
+/* Телефон */
+@media (max-width: 700px) {
+
+  .vizaran-bus-service {
+    width: calc(50% - 3px) !important;
+    margin-right: 3px !important;
+  }
+
+  .vizaran-seat-bottom {
+    position: relative !important;
+    inset: auto !important;
+
+    width: calc(100% - 24px) !important;
+    max-width: calc(100% - 24px) !important;
+
+    margin: 22px auto 20px !important;
+    padding: 14px !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+
+    gap: 10px !important;
+  }
+
+  .vizaran-seat-bottom .vizaran-price,
+  .vizaran-seat-bottom .vizaran-bottom-seat,
+  .vizaran-seat-bottom .vizaran-seat-submit {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    flex: none !important;
+    box-sizing: border-box;
+  }
+
+  .vizaran-seat-bottom .vizaran-bottom-seat {
+    text-align: center;
+  }
+
+  .vizaran-seat-bottom .vizaran-seat-submit {
+    margin: 0 !important;
+  }
+}
