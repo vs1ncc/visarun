@@ -1,0 +1,5 @@
+
+client/dist/
+
+.vercel/
+.env.local
