@@ -5763,3 +5763,44 @@ html:has(.seat-selection-page) {
   color: #b76cff;
   text-decoration: none;
 }
+
+/* FINAL CONSENT TEXT ALIGNMENT */
+.passport-page .consent-card {
+  align-items: center !important;
+}
+
+.passport-page .consent-card .consent-check {
+  flex: 0 0 22px;
+  margin-top: 0 !important;
+}
+
+.passport-page .consent-card .consent-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.passport-page .consent-card .link-button {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: #b76cff;
+  font: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  vertical-align: baseline;
+  text-align: left;
+  white-space: normal;
+}
+
+.passport-page .consent-card .link-button:active {
+  transform: none;
+}
+
