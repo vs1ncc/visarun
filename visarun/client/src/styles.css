@@ -5804,3 +5804,27 @@ html:has(.seat-selection-page) {
   transform: none;
 }
 
+
+/* PASSPORT PAGE — EXACT 30PX BOTTOM END */
+.passport-page {
+  min-height: 0 !important;
+  height: auto !important;
+  padding-bottom: 30px !important;
+  margin-bottom: 0 !important;
+  overflow: visible !important;
+}
+
+.passport-page .passport-footer {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.passport-page .passport-footer .primary-button {
+  margin-bottom: 0 !important;
+}
+
+.passport-page::after {
+  display: none !important;
+  content: none !important;
+}
+
