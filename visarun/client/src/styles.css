@@ -5612,3 +5612,34 @@ body:has(.passport-page) .passport-page .primary-button {
     margin-bottom: 30px !important;
   }
 }
+
+/* FIX: make passenger birth date input clickable */
+.passport-page .birth-date-wrap {
+  isolation: auto !important;
+}
+
+.passport-page .birth-date-input {
+  position: relative !important;
+  z-index: 2 !important;
+  display: block !important;
+  width: 100% !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+  touch-action: manipulation;
+}
+
+.passport-page .birth-date-input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 45px;
+  height: 100%;
+  opacity: 0.01;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.passport-page .birth-date-icon {
+  z-index: 1;
+  pointer-events: none !important;
+}
