@@ -1239,22 +1239,33 @@ function SeatSelection({
                 <span>B</span>
               </div>
 
-              <div className="vizaran-seat-grid">
-                {seats.map((row, index) => (
-                  <React.Fragment key={row.upperLeft}>
-                    {renderSeat(row.upperLeft, "upper")}
-                    {renderSeat(row.lowerLeft, "lower")}
-                    {renderSeat(row.upperRight, "upper")}
-                    {renderSeat(row.lowerRight, "lower")}
+              <div className="vizaran-seat-layout">
+                <div className="vizaran-seat-column vizaran-seat-column-left">
+                  {seats.map((row) => (
+                    <React.Fragment key={row.upperLeft}>
+                      {renderSeat(row.upperLeft, "upper")}
+                      {renderSeat(row.lowerLeft, "lower")}
+                    </React.Fragment>
+                  ))}
+                </div>
 
-                    {index === 7 && (
-                      <div className="vizaran-bus-service">
-                        <span>WC</span>
-                        <small>ТУАЛЕТ</small>
-                      </div>
-                    )}
-                  </React.Fragment>
-                ))}
+                <div className="vizaran-aisle">
+                  <span>ПРОХОД</span>
+                </div>
+
+                <div className="vizaran-seat-column vizaran-seat-column-right">
+                  {seats.map((row) => (
+                    <React.Fragment key={row.upperRight}>
+                      {renderSeat(row.upperRight, "upper")}
+                      {renderSeat(row.lowerRight, "lower")}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+
+              <div className="vizaran-bus-service">
+                <span>WC</span>
+                <small>ТУАЛЕТ</small>
               </div>
             </div>
 
