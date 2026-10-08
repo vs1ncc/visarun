@@ -5492,8 +5492,8 @@ body:has(.passport-page) .passport-page .primary-button {
   text-align: left;
 
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  gap: 6px;
 }
 
 /* МЕСТО — справа */
@@ -5505,19 +5505,19 @@ body:has(.passport-page) .passport-page .primary-button {
   text-align: right;
 
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Увеличиваем оба информационных блока примерно на 20% */
 .vizaran-seat-bottom .vizaran-price span,
 .vizaran-seat-bottom .vizaran-bottom-seat span {
-  font-size: 1.08em;
+  font-size: 0.97em;
 }
 
 .vizaran-seat-bottom .vizaran-price strong,
 .vizaran-seat-bottom .vizaran-bottom-seat strong {
-  font-size: 1.08em;
+  font-size: 0.97em;
 }
 
 /* Кнопка — отдельная строка снизу */
