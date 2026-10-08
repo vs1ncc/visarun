@@ -3946,25 +3946,7 @@ html:has(.seat-selection-page) {
   background: #111117;
 }
 
-.vizaran-seat-bottom {
-  position: fixed;
-  left: 50%;
-  bottom: 10px;
-  z-index: 50;
-  width: min(calc(100% - 24px), 560px);
-  transform: translateX(-50%);
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  box-sizing: border-box;
-  border: 1px solid rgba(255,255,255,.09);
-  border-radius: 18px;
-  background: rgba(16,16,22,.96);
-  box-shadow: 0 15px 45px rgba(0,0,0,.4);
-  backdrop-filter: blur(16px);
-}
+
 
 .vizaran-price span,
 .vizaran-bottom-seat span {
@@ -5228,11 +5210,7 @@ body:has(.passport-page) .passport-page .primary-button {
   min-height: 520px !important;
 }
 
-.vizaran-seat-bottom {
-  position: sticky !important;
-  bottom: 12px !important;
-  z-index: 20 !important;
-}
+
 
 @media (max-width: 700px) {
   .vizaran-seat-page {
@@ -5256,10 +5234,7 @@ body:has(.passport-page) .passport-page .primary-button {
     width: 100% !important;
   }
 
-  .vizaran-seat-bottom {
-    position: sticky !important;
-    bottom: 10px !important;
-  }
+  
 }
 
 /* END SEAT MOBILE FIX */
@@ -5355,20 +5330,7 @@ body:has(.passport-page) .passport-page .primary-button {
   box-sizing: border-box;
 }
 
-.vizaran-seat-bottom {
-  position: relative !important;
-  left: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  width: 100% !important;
-  max-width: 760px;
-  margin: 10px auto 0 !important;
-  box-sizing: border-box;
-  display: grid !important;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
-  gap: 14px;
-}
+
 
 /* Keep everything inside the viewport on phones */
 @media (max-width: 700px) {
@@ -5383,10 +5345,7 @@ body:has(.passport-page) .passport-page .primary-button {
   .vizaran-bus,
   .vizaran-seat-content,
   .vizaran-seat-sidebar,
-  .vizaran-seat-bottom {
-    max-width: 100%;
-    box-sizing: border-box;
-  }
+  
 
   .vizaran-seat-layout {
     grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
@@ -5407,15 +5366,7 @@ body:has(.passport-page) .passport-page .primary-button {
     width: 100% !important;
   }
 
-  .vizaran-seat-bottom {
-    position: relative !important;
-    display: grid !important;
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-    width: 100% !important;
-    margin: 12px 0 0 !important;
-    padding: 0 !important;
-  }
+  
 
   .vizaran-price {
     min-width: 0;
@@ -5446,30 +5397,7 @@ body:has(.passport-page) .passport-page .primary-button {
 }
 
 /* Нижняя панель — отдельный центрированный блок */
-.vizaran-seat-bottom {
-  position: relative !important;
-  inset: auto !important;
-  float: none !important;
 
-  width: calc(100% - 32px) !important;
-  max-width: 760px !important;
-  margin: 24px auto 24px !important;
-
-  box-sizing: border-box;
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-
-  padding: 14px 18px !important;
-  gap: 22px;
-
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 18px;
-  background: rgba(15,15,22,.94);
-  box-shadow:
-    0 14px 40px rgba(0,0,0,.28),
-    inset 0 1px 0 rgba(255,255,255,.035);
-}
 
 /* Чтобы отдельные элементы больше не разъезжались */
 .vizaran-seat-bottom .vizaran-price {
@@ -5496,23 +5424,7 @@ body:has(.passport-page) .passport-page .primary-button {
     margin-right: 3px !important;
   }
 
-  .vizaran-seat-bottom {
-    position: relative !important;
-    inset: auto !important;
-
-    width: calc(100% - 24px) !important;
-    max-width: calc(100% - 24px) !important;
-
-    margin: 22px auto 20px !important;
-    padding: 14px !important;
-
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    justify-content: center !important;
-
-    gap: 10px !important;
-  }
+  
 
   .vizaran-seat-bottom .vizaran-price,
   .vizaran-seat-bottom .vizaran-bottom-seat,
@@ -5530,5 +5442,84 @@ body:has(.passport-page) .passport-page .primary-button {
 
   .vizaran-seat-bottom .vizaran-seat-submit {
     margin: 0 !important;
+  }
+}
+
+
+/* =========================================================
+   SEAT PAGE — BOTTOM BOOKING PANEL
+   ========================================================= */
+
+.vizaran-seat-bottom {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  inset: auto !important;
+  transform: none !important;
+
+  width: calc(100% - 32px) !important;
+  max-width: 760px !important;
+
+  margin: 24px auto !important;
+
+  box-sizing: border-box;
+
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+
+  gap: 22px;
+
+  padding: 14px 18px !important;
+
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  background: rgba(15,15,22,.94);
+  box-shadow:
+    0 14px 40px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+.vizaran-seat-bottom .vizaran-price {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.vizaran-seat-bottom .vizaran-bottom-seat {
+  flex: 0 0 auto;
+  min-width: 70px;
+  text-align: center;
+}
+
+.vizaran-seat-bottom .vizaran-seat-submit {
+  flex: 0 1 240px;
+  min-width: 0;
+  max-width: 240px;
+}
+
+@media (max-width: 700px) {
+  .vizaran-seat-bottom {
+    width: calc(100% - 24px) !important;
+    max-width: none !important;
+    margin: 22px auto 20px !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+
+    gap: 10px !important;
+  }
+
+  .vizaran-seat-bottom .vizaran-price,
+  .vizaran-seat-bottom .vizaran-bottom-seat,
+  .vizaran-seat-bottom .vizaran-seat-submit {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    flex: none !important;
+    box-sizing: border-box;
   }
 }
