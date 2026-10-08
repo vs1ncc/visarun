@@ -5699,3 +5699,41 @@ body:has(.passport-page) .passport-page .primary-button {
   padding-right: 45px !important;
   cursor: pointer !important;
 }
+
+/* FINAL FIX — seat page uses shared site background and ends 30px after CTA */
+.vizaran-seat-page {
+  display: flex !important;
+  flex-direction: column !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 18px 16px 0 !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.vizaran-seat-page::before,
+.vizaran-seat-page::after {
+  content: none !important;
+  display: none !important;
+}
+
+.vizaran-seat-page > .vizaran-seat-bottom {
+  flex-shrink: 0 !important;
+  margin: 24px auto 30px !important;
+}
+
+@media (max-width: 700px) {
+  .vizaran-seat-page {
+    padding: 14px 12px 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .vizaran-seat-page > .vizaran-seat-bottom {
+    margin: 22px auto 30px !important;
+  }
+}
