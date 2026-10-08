@@ -5127,3 +5127,78 @@ html:has(.seat-selection-page) {
     font-size: 9px;
   }
 }
+
+
+/* =========================================================
+   CALENDAR HEADER — FINAL ALIGNMENT
+   ========================================================= */
+
+.vizaran-calendar-top {
+  grid-template-columns: 36px minmax(0,1fr) !important;
+  gap: 14px !important;
+}
+
+.vizaran-calendar-back {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 13px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.045) !important;
+  border: 1px solid rgba(255,255,255,.06) !important;
+  color: var(--text-2) !important;
+  box-shadow: none !important;
+  font-size: 0 !important;
+}
+
+.vizaran-calendar-back::before,
+.vizaran-calendar-back::after {
+  content: none !important;
+  display: none !important;
+}
+
+.vizaran-calendar-back .back-arrow {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.vizaran-calendar-back .back-arrow svg {
+  width: 19px;
+  height: 19px;
+  display: block;
+}
+
+.vizaran-calendar-heading h1 {
+  font-size: 28px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  letter-spacing: -.02em !important;
+}
+
+.vizaran-calendar-step {
+  display: none !important;
+}
+
+@media (max-width: 700px) {
+  .vizaran-calendar-top {
+    grid-template-columns: 36px minmax(0,1fr) !important;
+    gap: 10px !important;
+  }
+
+  .vizaran-calendar-back {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+
+  .vizaran-calendar-heading h1 {
+    font-size: 23px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+  }
+}

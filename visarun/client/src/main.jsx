@@ -881,7 +881,17 @@ function CalendarSelection({
           onClick={onBack}
           aria-label="Назад"
         >
-          ←
+          <span className="back-arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M19 12H5M11 6L5 12L11 18"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
         </button>
 
         <div className="vizaran-calendar-heading">
@@ -896,10 +906,6 @@ function CalendarSelection({
           </p>
         </div>
 
-        <div className="vizaran-calendar-step">
-          <strong>02</strong>
-          <span>ДАТА</span>
-        </div>
       </div>
 
       <div className="vizaran-calendar-card">
