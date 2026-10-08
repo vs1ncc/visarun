@@ -989,11 +989,6 @@ function CalendarSelection({
       </div>
 
       <div className="vizaran-calendar-bottom">
-        <div className="calendar-selected-info">
-          <span>ВЫБРАННАЯ ДАТА</span>
-          <strong>{selectedDate || "—"}</strong>
-        </div>
-
         <button
           type="button"
           className="vizaran-calendar-submit"

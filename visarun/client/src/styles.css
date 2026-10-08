@@ -5238,3 +5238,112 @@ html:has(.seat-selection-page) {
     font-size: 19px !important;
   }
 }
+
+
+/* =========================================================
+   CALENDAR — COMPACT FULL SCREEN
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .vizaran-calendar-page {
+    height: calc(100dvh - 20px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 12px 14px 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  .vizaran-calendar-top {
+    margin-bottom: 12px !important;
+  }
+
+  .vizaran-calendar-heading h1 {
+    font-size: 23px !important;
+  }
+
+  .vizaran-calendar-heading p {
+    margin-top: 5px !important;
+    font-size: 10px !important;
+  }
+
+  .vizaran-calendar-card {
+    padding: 16px 12px 12px !important;
+    border-radius: 20px !important;
+  }
+
+  .vizaran-calendar-month {
+    margin-bottom: 10px !important;
+  }
+
+  .vizaran-calendar-month strong {
+    font-size: 21px !important;
+  }
+
+  .vizaran-calendar-month span {
+    margin-top: 4px !important;
+    font-size: 9px !important;
+  }
+
+  .vizaran-calendar-month > button {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .vizaran-calendar-week {
+    gap: 5px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .vizaran-calendar-grid {
+    gap: 5px !important;
+  }
+
+  .vizaran-calendar-day {
+    min-height: 39px !important;
+    border-radius: 11px !important;
+  }
+
+  .vizaran-calendar-day > strong {
+    font-size: 17px !important;
+  }
+
+  .vizaran-calendar-legend {
+    gap: 8px 12px !important;
+    margin-top: 10px !important;
+    padding-top: 9px !important;
+  }
+
+  .vizaran-calendar-legend > div {
+    font-size: 7px !important;
+  }
+
+  .vizaran-calendar-bottom {
+    display: block !important;
+    margin-top: 10px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .vizaran-calendar-submit {
+    width: 100% !important;
+    min-height: 48px !important;
+    border-radius: 14px !important;
+    margin: 0 !important;
+  }
+
+  .vizaran-calendar-submit span {
+    font-size: 13px !important;
+  }
+
+  .vizaran-calendar-submit b {
+    font-size: 21px !important;
+  }
+
+  .vizaran-calendar-page::after {
+    margin-top: 8px !important;
+    padding: 6px 18px !important;
+    font-size: 8px !important;
+  }
+}
