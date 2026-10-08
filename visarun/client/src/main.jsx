@@ -996,7 +996,6 @@ function CalendarSelection({
           onClick={onContinue}
         >
           <span>ПРОДОЛЖИТЬ</span>
-          <b>→</b>
         </button>
       </div>
 

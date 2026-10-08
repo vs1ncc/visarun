@@ -4953,21 +4953,6 @@ html:has(.seat-selection-page) {
   line-height: 1;
 }
 
-/* FOOTER */
-
-.vizaran-calendar-page::after {
-  content: "@sergio_visarunbot";
-  display: block;
-  width: max-content;
-  margin: 20px auto 0;
-  padding: 9px 25px;
-  color: #9854ff;
-  font-size: 11px;
-  border: 1px solid rgba(111,66,205,.22);
-  border-radius: 30px;
-  background: rgba(10,8,25,.3);
-}
-
 /* MOBILE */
 
 @media (max-width: 700px) {
