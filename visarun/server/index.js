@@ -208,9 +208,7 @@ app.post("/api/profile/phone", (req, res) => {
 app.post("/api/profile/passport", (req, res) => {
   const {
     telegramId,
-    fullName,
-    birthDate,
-    passportNumber,
+    passengers,
     consent
   } = req.body;
 
@@ -233,10 +231,33 @@ app.post("/api/profile/passport", (req, res) => {
     });
   }
 
+  const normalizedPassengers = Array.isArray(passengers)
+    ? passengers
+        .filter(
+          (passenger) =>
+            passenger &&
+            passenger.fullName &&
+            passenger.birthDate &&
+            passenger.passportNumber
+        )
+        .map((passenger) => ({
+          fullName: passenger.fullName,
+          birthDate: passenger.birthDate,
+          passportNumber: passenger.passportNumber
+        }))
+    : [];
+
+  if (normalizedPassengers.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: "Необходимо указать данные пассажира"
+    });
+  }
+
+  user.passengers = normalizedPassengers;
+
   user.passport = {
-    fullName,
-    birthDate,
-    passportNumber,
+    ...normalizedPassengers[0],
     consent: true,
     consentAt: new Date().toISOString()
   };

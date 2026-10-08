@@ -40,11 +40,13 @@ function App() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [service, setService] = useState(null);
 
-  const [passport, setPassport] = useState({
-    fullName: "",
-    birthDate: "",
-    passportNumber: ""
-  });
+  const [passengers, setPassengers] = useState([
+    {
+      fullName: "",
+      birthDate: "",
+      passportNumber: ""
+    }
+  ]);
 
   const [consent, setConsent] = useState(false);
 
@@ -199,19 +201,23 @@ function App() {
   }
 
   async function savePassportAndContinue() {
-    if (!passport.fullName) {
-      alert("Введите ФИО");
-      return;
-    }
+    for (let i = 0; i < passengers.length; i++) {
+      const passenger = passengers[i];
 
-    if (!passport.birthDate) {
-      alert("Введите дату рождения");
-      return;
-    }
+      if (!passenger.fullName) {
+        alert(`Введите ФИО пассажира ${i + 1}`);
+        return;
+      }
 
-    if (!passport.passportNumber) {
-      alert("Введите номер загранпаспорта");
-      return;
+      if (!passenger.birthDate) {
+        alert(`Введите дату рождения пассажира ${i + 1}`);
+        return;
+      }
+
+      if (!passenger.passportNumber) {
+        alert(`Введите номер загранпаспорта пассажира ${i + 1}`);
+        return;
+      }
     }
 
     if (!consent) {
@@ -233,7 +239,7 @@ function App() {
           },
           body: JSON.stringify({
             telegramId: user.telegramId,
-            ...passport,
+            passengers,
             consent: true
           })
         }
@@ -246,68 +252,13 @@ function App() {
       }
 
       setScreen("seats");
+
     } catch (error) {
-      alert(error.message);
+      alert(error.message || "Не удалось сохранить данные");
     } finally {
       setLoading(false);
     }
   }
-
-  async function createBooking() {
-    if (!selectedSeat) {
-      alert("Выберите место");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await fetch(`${API}/orders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          telegramId: user.telegramId,
-          route,
-          service: service.title,
-          priceRub: service.priceRub,
-          priceVnd: service.priceVnd,
-          seat: selectedSeat
-        })
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error);
-      }
-
-      setOrder(data.order);
-
-      setTimeLeft(1200);
-
-      setScreen("payment");
-
-      loadOrders(user.telegramId);
-    } catch (error) {
-      alert(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (screen !== "payment") return;
-
-    if (timeLeft <= 0) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((value) => value - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [screen, timeLeft]);
 
   function formatTime(seconds) {
     const minutes = Math.floor(seconds / 60);
@@ -395,8 +346,8 @@ function App() {
 
         {screen === "passport" && (
           <Passport
-            passport={passport}
-            setPassport={setPassport}
+            passengers={passengers}
+            setPassengers={setPassengers}
             consent={consent}
             setConsent={setConsent}
             onBack={() => setScreen("service")}
@@ -732,8 +683,8 @@ function ServiceCard({
 ========================= */
 
 function Passport({
-  passport,
-  setPassport,
+  passengers,
+  setPassengers,
   consent,
   setConsent,
   onBack,
@@ -741,113 +692,213 @@ function Passport({
   onContinue,
   loading
 }) {
+  function updatePassenger(index, field, value) {
+    setPassengers((current) =>
+      current.map((passenger, i) =>
+        i === index
+          ? { ...passenger, [field]: value }
+          : passenger
+      )
+    );
+  }
+
+  function addPassenger() {
+    if (passengers.length >= 30) return;
+
+    setPassengers((current) => [
+      ...current,
+      {
+        fullName: "",
+        birthDate: "",
+        passportNumber: ""
+      }
+    ]);
+  }
+
+  function removePassenger() {
+    if (passengers.length <= 1) return;
+
+    setPassengers((current) => current.slice(0, -1));
+  }
+
   return (
-    <div>
+    <div className="passport-page">
 
       <BackButton onClick={onBack} />
 
-      <h1>
-        Данные пассажира
-      </h1>
+      <h1>Данные пассажиров</h1>
 
       <p className="subtitle">
         Укажите данные загранпаспорта
       </p>
 
-      <div className="form">
+      <div className="passengers-list">
 
-        <label>
-          ФИО
+        {passengers.map((passenger, index) => (
+          <section className="passenger-block" key={index}>
 
-          <input
-            value={passport.fullName}
-            onChange={(e) =>
-              setPassport({
-                ...passport,
-                fullName: e.target.value
-              })
-            }
-            placeholder="Иванов Иван Иванович"
-          />
-        </label>
+            <div className="passenger-heading">
 
-        <label>
-          Дата рождения
+              <div>
+                <span>ПАССАЖИР</span>
+                <h2>Пассажир {index + 1}</h2>
+              </div>
 
-          <input
-            type="date"
-            value={passport.birthDate}
-            onChange={(e) =>
-              setPassport({
-                ...passport,
-                birthDate: e.target.value
-              })
-            }
-          />
-        </label>
+              {index === 0 && (
+                <div className="passenger-counter">
 
-        <label>
-          Номер загранпаспорта
+                  <button
+                    type="button"
+                    onClick={removePassenger}
+                    disabled={passengers.length <= 1}
+                  >
+                    −
+                  </button>
 
-          <input
-            value={passport.passportNumber}
-            onChange={(e) =>
-              setPassport({
-                ...passport,
-                passportNumber: e.target.value
-              })
-            }
-            placeholder="12 3456789"
-          />
-        </label>
+                  <strong>{passengers.length}</strong>
+
+                  <button
+                    type="button"
+                    onClick={addPassenger}
+                    disabled={passengers.length >= 30}
+                  >
+                    +
+                  </button>
+
+                </div>
+              )}
+
+            </div>
+
+            <div className="form">
+
+              <label>
+                ФИО
+
+                <input
+                  value={passenger.fullName}
+                  onChange={(e) =>
+                    updatePassenger(
+                      index,
+                      "fullName",
+                      e.target.value
+                    )
+                  }
+                  placeholder="Иванов Иван Иванович"
+                />
+              </label>
+
+              <label>
+                Дата рождения
+
+                <div className="birth-date-wrap">
+
+                  <input
+                    className="birth-date-input"
+                    type="date"
+                    value={passenger.birthDate}
+                    onChange={(e) =>
+                      updatePassenger(
+                        index,
+                        "birthDate",
+                        e.target.value
+                      )
+                    }
+                  />
+
+                  <span
+                    className="birth-date-icon"
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <rect
+                        x="3"
+                        y="5"
+                        width="18"
+                        height="16"
+                        rx="3"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                      />
+                      <path
+                        d="M7 3V7M17 3V7M3 10H21"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+
+                </div>
+              </label>
+
+              <label>
+                Номер загранпаспорта
+
+                <input
+                  value={passenger.passportNumber}
+                  onChange={(e) =>
+                    updatePassenger(
+                      index,
+                      "passportNumber",
+                      e.target.value
+                    )
+                  }
+                  placeholder="12 3456789"
+                />
+              </label>
+
+            </div>
+
+          </section>
+        ))}
 
       </div>
 
-      <label className="consent">
+      <div className="passport-footer">
 
-        <input
-          type="checkbox"
-          checked={consent}
-          onChange={(e) =>
-            setConsent(e.target.checked)
-          }
-        />
+        <label className="consent">
 
-        <span>
-          Согласен с{" "}
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) =>
+              setConsent(e.target.checked)
+            }
+          />
 
-          <button
-            className="link-button"
-            onClick={(e) => {
-              e.preventDefault();
-              onPrivacy();
-            }}
-          >
-            политикой обработки
-            персональных данных
-          </button>
-        </span>
+          <span>
+            Согласен с{" "}
 
-      </label>
+            <button
+              className="link-button"
+              onClick={(e) => {
+                e.preventDefault();
+                onPrivacy();
+              }}
+            >
+              политикой обработки
+              персональных данных
+            </button>
+          </span>
 
-      <button
-        className="primary-button"
-        disabled={loading}
-        onClick={onContinue}
-      >
-        {loading
-          ? "Сохраняем..."
-          : "Перейти к бронированию"}
-      </button>
+        </label>
+
+        <button
+          className="primary-button"
+          disabled={loading}
+          onClick={onContinue}
+        >
+          {loading
+            ? "Сохраняем..."
+            : "Перейти к бронированию"}
+        </button>
+
+      </div>
 
     </div>
   );
 }
-
-/* =========================
-   SEATS
-========================= */
-
 
 function CalendarSelection({
   route,

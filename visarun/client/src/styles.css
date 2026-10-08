@@ -5351,3 +5351,159 @@ html:has(.seat-selection-page) {
 .vizaran-calendar-submit:not(:disabled) {
   cursor: pointer;
 }
+
+
+/* =========================================================
+   PASSENGERS / PASSPORT
+   ========================================================= */
+
+.passport-page {
+  padding-bottom: 24px;
+}
+
+.passengers-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.passenger-block {
+  padding: 20px 0 22px;
+  border-bottom: 1px solid rgba(255,255,255,.075);
+}
+
+.passenger-block:first-child {
+  padding-top: 4px;
+}
+
+.passenger-block:last-child {
+  border-bottom: 0;
+}
+
+.passenger-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 17px;
+}
+
+.passenger-heading > div:first-child span {
+  display: block;
+  margin-bottom: 4px;
+  color: rgba(168,85,247,.9);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+
+.passenger-heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 19px;
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.passenger-counter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 13px;
+  background: rgba(255,255,255,.035);
+}
+
+.passenger-counter button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  color: #fff;
+  background: rgba(168,85,247,.18);
+  font-size: 21px;
+  line-height: 1;
+}
+
+.passenger-counter button:active {
+  transform: scale(.94);
+}
+
+.passenger-counter button:disabled {
+  opacity: .28;
+}
+
+.passenger-counter strong {
+  width: 25px;
+  text-align: center;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.birth-date-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.birth-date-input {
+  color-scheme: dark;
+  padding-right: 45px !important;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.birth-date-input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 13px;
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.birth-date-icon {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  width: 19px;
+  height: 19px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: rgba(168,85,247,.85);
+}
+
+.birth-date-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.passport-footer {
+  margin-top: 20px;
+}
+
+.passport-footer .consent {
+  margin-top: 20px !important;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,.055);
+}
+
+.passport-footer .primary-button {
+  margin-top: 18px;
+}
+
+@media (max-width: 700px) {
+  .passenger-block {
+    padding: 18px 0 20px;
+  }
+
+  .passenger-heading h2 {
+    font-size: 18px;
+  }
+
+  .passenger-counter button {
+    width: 30px;
+    height: 30px;
+  }
+}
