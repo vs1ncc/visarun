@@ -1148,88 +1148,224 @@ function SeatSelection({
   onContinue,
   loading
 }) {
-  return (
-    <div style={{
-      minHeight: "100vh",
-      boxSizing: "border-box",
-      padding: "30px 20px",
-      background: "#09090d",
-      color: "#fff",
-      fontFamily: "Seenonim, sans-serif"
-    }}>
+  const seats = Array.from({ length: 8 }, (_, i) => ({
+    upperLeft: `${i + 1}A`,
+    lowerLeft: `${i + 1}B`,
+    upperRight: `${i + 9}A`,
+    lowerRight: `${i + 9}B`
+  }));
+
+  const takenSeats = new Set([
+    "2B",
+    "6A",
+    "11B",
+    "15A"
+  ]);
+
+  function renderSeat(seat, type) {
+    const taken = takenSeats.has(seat);
+
+    return (
       <button
+        key={seat}
         type="button"
-        onClick={onBack}
-        style={{
-          padding: "12px 18px",
-          borderRadius: "12px",
-          border: "1px solid rgba(255,255,255,.15)",
-          background: "rgba(255,255,255,.06)",
-          color: "#fff"
-        }}
+        disabled={taken}
+        className={[
+          "v-seat",
+          type === "upper" ? "v-seat-upper" : "v-seat-lower",
+          selectedSeat === seat ? "v-seat-selected" : "",
+          taken ? "v-seat-taken" : ""
+        ].join(" ")}
+        onClick={() => setSelectedSeat(seat)}
       >
-        ← Назад
+        <span>{seat.replace(/[AB]/, "")}</span>
+        <b>{type === "upper" ? "A" : "B"}</b>
       </button>
+    );
+  }
 
-      <h1 style={{ marginTop: "35px" }}>
-        Выбор места
-      </h1>
+  return (
+    <div className="vizaran-seat-page">
+      <div className="vizaran-seat-top">
+        <BackButton onClick={onBack} />
 
-      <p>
-        Маршрут: {route || "—"}
-      </p>
+        <div className="vizaran-trip">
+          <span className="vizaran-trip-label">ВАШ МАРШРУТ</span>
+          <h1>{route || "Выбранный маршрут"}</h1>
+          <p>Выберите место в автобусе</p>
+        </div>
 
-      <p>
-        Услуга: {service?.name || service?.title || "—"}
-      </p>
-
-      <div style={{
-        marginTop: "30px",
-        padding: "24px",
-        borderRadius: "18px",
-        background: "rgba(168,85,247,.12)",
-        border: "1px solid rgba(168,85,247,.25)"
-      }}>
-        <h2 style={{ marginTop: 0 }}>Экран работает</h2>
-
-        <button
-          type="button"
-          onClick={() => setSelectedSeat("1A")}
-          style={{
-            padding: "16px 22px",
-            borderRadius: "14px",
-            border: 0,
-            background: "#8b45d9",
-            color: "#fff"
-          }}
-        >
-          Выбрать место 1A
-        </button>
-
-        <p style={{ marginTop: "20px" }}>
-          Выбрано: {selectedSeat || "ничего"}
-        </p>
+        <div className="vizaran-step">
+          <span>01</span>
+          <small>МЕСТО</small>
+        </div>
       </div>
 
-      <button
-        type="button"
-        disabled={!selectedSeat || loading}
-        onClick={onContinue}
-        style={{
-          width: "100%",
-          marginTop: "30px",
-          minHeight: "52px",
-          borderRadius: "16px",
-          border: 0,
-          background: selectedSeat ? "#8b45d9" : "#333",
-          color: "#fff"
-        }}
-      >
-        {loading ? "ЗАГРУЗКА..." : "ПРОДОЛЖИТЬ"}
-      </button>
+      <div className="vizaran-seat-content">
+
+        <section className="vizaran-bus-wrap">
+          <div className="vizaran-bus">
+
+            <div className="vizaran-bus-front">
+              <div className="vizaran-front-window"></div>
+              <div className="vizaran-driver">
+                <span></span>
+                ВОДИТЕЛЬ
+              </div>
+            </div>
+
+            <div className="vizaran-bus-cabin">
+              <div className="vizaran-cabin-head">
+                <span>САЛОН</span>
+                <i>32 МЕСТА</i>
+              </div>
+
+              <div className="vizaran-seat-labels">
+                <span>A</span>
+                <span>B</span>
+                <span>A</span>
+                <span>B</span>
+              </div>
+
+              <div className="vizaran-seat-grid">
+                {seats.map((row, index) => (
+                  <React.Fragment key={row.upperLeft}>
+                    {renderSeat(row.upperLeft, "upper")}
+                    {renderSeat(row.lowerLeft, "lower")}
+                    {renderSeat(row.upperRight, "upper")}
+                    {renderSeat(row.lowerRight, "lower")}
+
+                    {index === 7 && (
+                      <div className="vizaran-bus-service">
+                        <span>WC</span>
+                        <small>ТУАЛЕТ</small>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            <div className="vizaran-bus-rear">
+              <span>ЗАДНЯЯ ЧАСТЬ</span>
+            </div>
+
+          </div>
+        </section>
+
+        <aside className="vizaran-seat-sidebar">
+
+          <div className="vizaran-selected-card">
+            <span className="vizaran-card-label">ВЫБРАННОЕ МЕСТО</span>
+
+            <div className="vizaran-selected-number">
+              {selectedSeat || "—"}
+            </div>
+
+            <p>
+              {selectedSeat
+                ? "Место закреплено за вами"
+                : "Выберите свободное место слева"}
+            </p>
+          </div>
+
+          <div className="vizaran-info-card">
+            <span className="vizaran-card-label">В АВТОБУСЕ</span>
+
+            <div className="vizaran-feature">
+              <span className="vizaran-feature-icon vizaran-wifi-icon" aria-hidden="true">
+  <svg viewBox="0 0 24 24" fill="none">
+    <path d="M3 8.5C8.5 4 15.5 4 21 8.5" />
+    <path d="M6.5 12C10.2 9.2 13.8 9.2 17.5 12" />
+    <path d="M10 15.5C11.3 14.5 12.7 14.5 14 15.5" />
+    <circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none" />
+  </svg>
+</span>
+              <div>
+                <strong>Wi-Fi</strong>
+                <small>Бесплатный интернет</small>
+              </div>
+            </div>
+
+            <div className="vizaran-feature">
+              <span className="vizaran-feature-icon vizaran-ac-icon" aria-hidden="true">❄</span>
+              <div>
+                <strong>Кондиционер</strong>
+                <small>Комфортная температура</small>
+              </div>
+            </div>
+
+            <div className="vizaran-feature">
+              <span className="vizaran-feature-icon vizaran-wc-icon" aria-hidden="true">WC</span>
+              <div>
+                <strong>Туалет</strong>
+                <small>В салоне автобуса</small>
+              </div>
+            </div>
+          </div>
+
+          <div className="vizaran-legend">
+            <span className="vizaran-card-label">МЕСТА</span>
+
+            <div>
+              <i className="free"></i>
+              <span>Свободно</span>
+            </div>
+
+            <div>
+              <i className="chosen"></i>
+              <span>Выбрано</span>
+            </div>
+
+            <div>
+              <i className="busy"></i>
+              <span>Занято</span>
+            </div>
+          </div>
+
+        </aside>
+      </div>
+
+      <div className="vizaran-seat-bottom">
+        <div className="vizaran-price">
+          {selectedSeat ? (
+            <>
+              <span>К ОПЛАТЕ</span>
+              <strong>
+                {service?.priceRub
+                  ? service.priceRub.toLocaleString("ru-RU")
+                  : "—"} ₽
+              </strong>
+            </>
+          ) : (
+            <>
+              <span>ВЫБЕРИТЕ МЕСТО</span>
+              <strong>—</strong>
+            </>
+          )}
+        </div>
+
+        <div className="vizaran-bottom-seat">
+          <span>МЕСТО</span>
+          <strong>{selectedSeat || "—"}</strong>
+        </div>
+
+        <button
+          className="vizaran-seat-submit"
+          disabled={!selectedSeat || loading}
+          onClick={onContinue}
+        >
+          {loading ? "БРОНИРУЕМ..." : "ПРОДОЛЖИТЬ"}
+          <span>→</span>
+        </button>
+      </div>
     </div>
   );
 }
+
+/* =========================
+   PAYMENT
+========================= */
 
 function Payment({
   order,
