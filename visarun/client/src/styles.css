@@ -5577,3 +5577,38 @@ body:has(.passport-page) .passport-page .primary-button {
     min-width: 0 !important;
   }
 }
+
+
+/* SEAT PAGE — final background and page spacing */
+.vizaran-seat-page {
+  background: #000 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding-bottom: 0 !important;
+  overflow: visible !important;
+}
+
+.vizaran-seat-page::before,
+.vizaran-seat-page::after {
+  background: none !important;
+  box-shadow: none !important;
+  content: none !important;
+}
+
+.vizaran-seat-page .vizaran-seat-bottom {
+  margin-bottom: 30px !important;
+}
+
+@media (max-width: 700px) {
+  .vizaran-seat-page {
+    padding-bottom: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  .vizaran-seat-page .vizaran-seat-bottom {
+    margin-bottom: 30px !important;
+  }
+}
