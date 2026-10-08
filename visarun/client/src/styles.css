@@ -5852,3 +5852,60 @@ body:has(.passport-page) .passport-page .primary-button {
   margin-bottom: 0 !important;
 }
 
+
+/* SEAT SCREEN — MOBILE WEBVIEW FIX */
+.vizaran-seat-page {
+  height: auto !important;
+  min-height: calc(100dvh - 20px) !important;
+  overflow: visible !important;
+  padding-bottom: 110px !important;
+}
+
+.vizaran-seat-content {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.vizaran-bus-wrap {
+  min-height: 520px !important;
+}
+
+.vizaran-bus {
+  min-height: 520px !important;
+}
+
+.vizaran-seat-bottom {
+  position: sticky !important;
+  bottom: 12px !important;
+  z-index: 20 !important;
+}
+
+@media (max-width: 700px) {
+  .vizaran-seat-page {
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 14px 12px 105px !important;
+  }
+
+  .vizaran-seat-content {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+  }
+
+  .vizaran-bus-wrap {
+    min-height: 520px !important;
+  }
+
+  .vizaran-seat-sidebar {
+    width: 100% !important;
+  }
+
+  .vizaran-seat-bottom {
+    position: sticky !important;
+    bottom: 10px !important;
+  }
+}
+
+/* END SEAT MOBILE FIX */
