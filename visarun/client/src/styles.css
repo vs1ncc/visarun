@@ -5676,3 +5676,26 @@ body:has(.passport-page) .passport-page .primary-button {
   height: 100%;
   opacity: 1 !important;
 }
+
+/* Birth date: visible calendar icon inside the field */
+.passport-page .birth-date-input::-webkit-calendar-picker-indicator {
+  opacity: 1 !important;
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  z-index: 4;
+  filter: invert(45%) sepia(82%) saturate(2500%) hue-rotate(235deg) brightness(105%);
+}
+
+.passport-page .birth-date-icon {
+  display: none !important;
+}
+
+.passport-page .birth-date-input {
+  padding-right: 45px !important;
+  cursor: pointer !important;
+}
