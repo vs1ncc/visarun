@@ -13,7 +13,8 @@ const API = "/api";
 
 const ROUTES = {
   LAOS: "Нячанг — Лаос",
-  CAMBODIA: "Нячанг — Камбоджа"
+  CAMBODIA: "Нячанг — Камбоджа",
+  DANANG_LAOS: "Дананг — Лаос"
 };
 
 const SERVICES = {
@@ -547,6 +548,14 @@ function Home({ onRoute, user }) {
           description="Штамп 45 дней или виза на 90 дней"
           accent="cambodia"
           onClick={() => onRoute(ROUTES.CAMBODIA)}
+        />
+
+        <RouteCard
+          title="Лаос"
+          route="Дананг — Лаос"
+          description="Штамп 45 дней или виза на 90 дней"
+          accent="laos"
+          onClick={() => onRoute(ROUTES.DANANG_LAOS)}
         />
 
       </div>
