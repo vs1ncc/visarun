@@ -11,6 +11,15 @@ if (tg) {
 
 const API = "/api";
 
+window.addEventListener("error", (event) => {
+  console.error("VIZARAN RUNTIME ERROR:", event.error || event.message);
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("VIZARAN PROMISE ERROR:", event.reason);
+});
+
+
 const ROUTES = {
   LAOS: "Нячанг — Лаос",
   CAMBODIA: "Нячанг — Камбоджа",
@@ -1095,6 +1104,7 @@ function SeatSelection({
   onContinue,
   loading
 }) {
+  try {
   const seats = Array.from({ length: 8 }, (_, i) => ({
     upperLeft: `${i + 1}A`,
     lowerLeft: `${i + 1}B`,
@@ -1308,6 +1318,31 @@ function SeatSelection({
       </div>
     </div>
   );
+  } catch (error) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        padding: "30px 20px",
+        boxSizing: "border-box",
+        background: "#09090d",
+        color: "#fff",
+        fontFamily: "sans-serif"
+      }}>
+        <h2 style={{color:"#ff6b8a", marginTop:0}}>
+          Ошибка экрана выбора места
+        </h2>
+        <pre style={{
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          color: "#fff",
+          fontSize: "13px",
+          lineHeight: 1.5
+        }}>
+          {String(error?.stack || error?.message || error)}
+        </pre>
+      </div>
+    );
+  }
 }
 
 /* =========================
