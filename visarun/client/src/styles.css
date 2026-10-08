@@ -5202,3 +5202,39 @@ html:has(.seat-selection-page) {
     white-space: nowrap !important;
   }
 }
+
+
+/* =========================================================
+   CALENDAR DATES — NUMBERS ONLY
+   ========================================================= */
+
+.vizaran-calendar-day {
+  aspect-ratio: 1 / 1 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 15px !important;
+}
+
+.vizaran-calendar-day > strong {
+  margin: 0 !important;
+  font-size: 24px !important;
+  line-height: 1 !important;
+  font-weight: 800 !important;
+}
+
+@media (max-width: 700px) {
+  .vizaran-calendar-day {
+    aspect-ratio: 1 / 1 !important;
+    height: auto !important;
+    min-height: 42px !important;
+    border-radius: 12px !important;
+  }
+
+  .vizaran-calendar-day > strong {
+    font-size: 19px !important;
+  }
+}

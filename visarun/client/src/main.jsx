@@ -857,18 +857,37 @@ function CalendarSelection({
   onContinue
 }) {
   const dates = [
-    { day: "08", weekday: "ЧТ", month: "ОКТ", available: true },
-    { day: "09", weekday: "ПТ", month: "ОКТ", available: true },
-    { day: "10", weekday: "СБ", month: "ОКТ", available: false },
-    { day: "11", weekday: "ВС", month: "ОКТ", available: true },
-    { day: "12", weekday: "ПН", month: "ОКТ", available: false },
-    { day: "13", weekday: "ВТ", month: "ОКТ", available: true },
-    { day: "14", weekday: "СР", month: "ОКТ", available: true },
-    { day: "15", weekday: "ЧТ", month: "ОКТ", available: false },
-    { day: "16", weekday: "ПТ", month: "ОКТ", available: true },
-    { day: "17", weekday: "СБ", month: "ОКТ", available: true },
-    { day: "18", weekday: "ВС", month: "ОКТ", available: false },
-    { day: "19", weekday: "ПН", month: "ОКТ", available: true }
+    { day: "01", available: false },
+    { day: "02", available: false },
+    { day: "03", available: false },
+    { day: "04", available: false },
+    { day: "05", available: false },
+    { day: "06", available: false },
+    { day: "07", available: false },
+    { day: "08", available: true },
+    { day: "09", available: true },
+    { day: "10", available: false },
+    { day: "11", available: true },
+    { day: "12", available: false },
+    { day: "13", available: true },
+    { day: "14", available: true },
+    { day: "15", available: false },
+    { day: "16", available: true },
+    { day: "17", available: true },
+    { day: "18", available: false },
+    { day: "19", available: true },
+    { day: "20", available: false },
+    { day: "21", available: false },
+    { day: "22", available: false },
+    { day: "23", available: false },
+    { day: "24", available: false },
+    { day: "25", available: false },
+    { day: "26", available: false },
+    { day: "27", available: false },
+    { day: "28", available: false },
+    { day: "29", available: false },
+    { day: "30", available: false },
+    { day: "31", available: false }
   ];
 
   return (
@@ -929,7 +948,7 @@ function CalendarSelection({
 
         <div className="vizaran-calendar-grid">
           {dates.map(date => {
-            const value = `${date.day}.${date.month}.2026`;
+            const value = `${date.day}.10.2026`;
             const selected = selectedDate === value;
 
             return (
@@ -944,15 +963,7 @@ function CalendarSelection({
                 ].join(" ")}
                 onClick={() => date.available && setSelectedDate(value)}
               >
-                <span className="calendar-day-weekday">
-                  {date.weekday}
-                </span>
-
                 <strong>{date.day}</strong>
-
-                <span className="calendar-day-month">
-                  {date.month}
-                </span>
               </button>
             );
           })}
