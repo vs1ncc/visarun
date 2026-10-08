@@ -749,20 +749,38 @@ function Passport({
 
                   <button
                     type="button"
+                    className="passenger-counter-btn"
                     onClick={removePassenger}
                     disabled={passengers.length <= 1}
+                    aria-label="Уменьшить количество пассажиров"
                   >
-                    −
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d="M7 12H17"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                      />
+                    </svg>
                   </button>
 
                   <strong>{passengers.length}</strong>
 
                   <button
                     type="button"
+                    className="passenger-counter-btn"
                     onClick={addPassenger}
                     disabled={passengers.length >= 30}
+                    aria-label="Добавить пассажира"
                   >
-                    +
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d="M12 7V17M7 12H17"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                      />
+                    </svg>
                   </button>
 
                 </div>

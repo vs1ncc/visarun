@@ -5570,3 +5570,88 @@ html:has(.seat-selection-page) {
 .passport-footer {
   padding-bottom: 0 !important;
 }
+
+
+/* PREMIUM PASSENGER COUNTER */
+.passenger-counter {
+  display: flex !important;
+  align-items: center;
+  gap: 4px;
+  padding: 4px !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 14px !important;
+  background: rgba(255,255,255,.035) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    0 6px 18px rgba(0,0,0,.12);
+}
+
+.passenger-counter .passenger-counter-btn {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0 !important;
+  border: 1px solid rgba(168,85,247,.18) !important;
+  border-radius: 10px !important;
+  color: rgba(255,255,255,.92) !important;
+  background: linear-gradient(
+    145deg,
+    rgba(168,85,247,.22),
+    rgba(124,58,237,.10)
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 4px 12px rgba(0,0,0,.14);
+}
+
+.passenger-counter .passenger-counter-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.passenger-counter .passenger-counter-btn:active:not(:disabled) {
+  transform: scale(.91);
+  background: rgba(168,85,247,.32) !important;
+}
+
+.passenger-counter .passenger-counter-btn:disabled {
+  opacity: .25;
+  box-shadow: none;
+}
+
+.passenger-counter strong {
+  width: 27px !important;
+  color: #fff !important;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ABSOLUTE END OF PASSPORT PAGE */
+.passport-page {
+  min-height: auto !important;
+  padding-bottom: 30px !important;
+  margin-bottom: 0 !important;
+}
+
+.passport-page .passport-footer {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.passport-page .passport-footer .primary-button {
+  margin-bottom: 0 !important;
+}
+
+.passport-page::after {
+  content: "";
+  display: block;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}
