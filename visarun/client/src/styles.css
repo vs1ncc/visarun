@@ -4995,3 +4995,16 @@ html:has(.seat-selection-page) {
     grid-template-columns: minmax(0,1fr) minmax(130px,155px);
   }
 }
+
+
+.back-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-arrow svg {
+  width: 19px;
+  height: 19px;
+  display: block;
+}
