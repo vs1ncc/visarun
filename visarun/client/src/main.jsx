@@ -484,7 +484,10 @@ function Home({ onRoute, user }) {
         <div className="brand-block">
           <div className="eyebrow">FESTO</div>
           <h1>Визаран</h1>
-          <p>Из Нячанга в Лаос и Камбоджу</p>
+          <p>
+    Из Нячанга в Лаос и Камбоджу<br />
+    Из Дананга в Лаос
+  </p>
         </div>
 
         <div className="telegram-avatar">
@@ -504,7 +507,7 @@ function Home({ onRoute, user }) {
         <div className="hero-glow"></div>
 
         <div className="hero-content">
-          <span className="hero-label">ВИЗАРАН ИЗ НЯЧАНГА</span>
+          <span className="hero-label">ВИЗАРАН ИЗ НЯЧАНГА/ДАНАНГА</span>
 
           <h2>
             Быстрое
