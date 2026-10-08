@@ -189,7 +189,7 @@ function App() {
   function openService(serviceType) {
     setService(SERVICES[serviceType]);
     setSelectedDate(null);
-    setScreen("calendar");
+    setScreen("passport");
   }
 
   function openPrivacy() {
@@ -251,7 +251,7 @@ function App() {
         throw new Error(data.error);
       }
 
-      setScreen("seats");
+      setScreen("calendar");
 
     } catch (error) {
       alert(error.message || "Не удалось сохранить данные");
@@ -340,7 +340,7 @@ function App() {
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
             onBack={() => setScreen("service")}
-            onContinue={() => setScreen("passport")}
+            onContinue={() => setScreen("seats")}
           />
         )}
 
