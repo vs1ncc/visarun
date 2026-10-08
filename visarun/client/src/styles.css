@@ -3560,40 +3560,38 @@ html:has(.seat-selection-page) {
 }
 
 
+
 /* =========================================================
-   VIZARAN — SEAT SELECTION REDESIGN
+   VIZARAN — SEAT SELECTION — CLEAN
    ========================================================= */
 
 .vizaran-seat-page {
   position: relative;
   width: 100%;
-  height: calc(100dvh - 20px);
-  min-height: 540px;
-  padding: 18px 22px 78px;
+  min-height: 100dvh;
   box-sizing: border-box;
-  overflow: hidden;
+  padding: 18px 16px 110px;
+  overflow: visible;
   color: #fff;
   background:
-    radial-gradient(circle at 18% 15%, rgba(142, 78, 255, .12), transparent 28%),
-    radial-gradient(circle at 85% 80%, rgba(111, 57, 214, .08), transparent 30%),
+    radial-gradient(circle at 18% 15%, rgba(142,78,255,.12), transparent 28%),
+    radial-gradient(circle at 85% 80%, rgba(111,57,214,.08), transparent 30%),
     #09090d;
 }
 
-.vizaran-seat-page > .vizaran-seat-top {
-  position: relative;
+.vizaran-seat-top {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-columns: 42px minmax(0,1fr) auto;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 14px;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
-.vizaran-seat-page > .vizaran-seat-top .back-button {
+.vizaran-seat-top .back-button {
   width: 42px !important;
   height: 42px !important;
   min-width: 42px !important;
   margin: 0 !important;
-  transform: none !important;
 }
 
 .vizaran-trip {
@@ -3610,15 +3608,11 @@ html:has(.seat-selection-page) {
 }
 
 .vizaran-trip h1 {
-  margin: 3px 0 1px;
-  overflow: hidden;
+  margin: 3px 0 2px;
   color: #fff;
-  font-size: clamp(18px, 2.4vw, 27px);
+  font-size: 20px;
   line-height: 1.05;
   font-weight: 800;
-  letter-spacing: -.035em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .vizaran-trip p {
@@ -3638,7 +3632,6 @@ html:has(.seat-selection-page) {
   color: rgba(177,128,255,.95);
   font-size: 24px;
   font-weight: 850;
-  letter-spacing: -.05em;
 }
 
 .vizaran-step small {
@@ -3650,29 +3643,26 @@ html:has(.seat-selection-page) {
 }
 
 .vizaran-seat-content {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 205px;
-  gap: 15px;
-  height: calc(100% - 66px);
-  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
 }
 
 .vizaran-bus-wrap {
-  min-width: 0;
-  min-height: 0;
+  width: 100%;
   display: flex;
   justify-content: center;
-  align-items: stretch;
 }
 
 .vizaran-bus {
   width: min(100%, 475px);
-  min-height: 0;
+  min-height: 520px;
   display: flex;
   flex-direction: column;
   border: 1px solid rgba(255,255,255,.09);
-  border-radius: 34px 34px 25px 25px;
-  background: linear-gradient(180deg, #15151c, #0e0e13);
+  border-radius: 30px 30px 24px 24px;
+  background: linear-gradient(180deg,#15151c,#0e0e13);
   box-shadow:
     0 20px 60px rgba(0,0,0,.42),
     inset 0 0 0 1px rgba(255,255,255,.025);
@@ -3683,7 +3673,7 @@ html:has(.seat-selection-page) {
   position: relative;
   flex: 0 0 70px;
   border-bottom: 1px solid rgba(255,255,255,.07);
-  background: linear-gradient(180deg, #1d1d26, #13131a);
+  background: linear-gradient(180deg,#1d1d26,#13131a);
 }
 
 .vizaran-front-window {
@@ -3695,7 +3685,11 @@ html:has(.seat-selection-page) {
   transform: translateX(-50%);
   border: 1px solid rgba(255,255,255,.08);
   border-radius: 14px 14px 20px 20px;
-  background: linear-gradient(135deg, rgba(126,84,190,.17), rgba(255,255,255,.025));
+  background: linear-gradient(
+    135deg,
+    rgba(126,84,190,.17),
+    rgba(255,255,255,.025)
+  );
 }
 
 .vizaran-driver {
@@ -3720,7 +3714,6 @@ html:has(.seat-selection-page) {
 
 .vizaran-bus-cabin {
   flex: 1 1 auto;
-  min-height: 0;
   padding: 10px 14px 8px;
   display: flex;
   flex-direction: column;
@@ -3750,7 +3743,7 @@ html:has(.seat-selection-page) {
 
 .vizaran-seat-labels {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4,1fr);
   gap: 7px;
   padding: 0 3px 4px;
   color: rgba(255,255,255,.22);
@@ -3760,18 +3753,16 @@ html:has(.seat-selection-page) {
 }
 
 .vizaran-seat-grid {
-  flex: 1 1 auto;
-  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
-  gap: 5px 7px;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  grid-auto-rows: 1fr;
+  gap: 6px 7px;
   padding: 2px 3px;
 }
 
 .v-seat {
   min-width: 0;
-  min-height: 0;
+  min-height: 42px;
   border: 1px solid rgba(255,255,255,.09);
   border-radius: 7px;
   display: flex;
@@ -3783,80 +3774,59 @@ html:has(.seat-selection-page) {
   box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
   cursor: pointer;
   font-family: inherit;
-  transition: transform .14s ease, border-color .14s ease, background .14s ease;
 }
 
 .v-seat:hover:not(:disabled) {
-  transform: translateY(-1px);
   border-color: rgba(166,113,255,.7);
   background: #24202f;
 }
 
 .v-seat span {
   font-size: 10px;
-  font-weight: 800;
-  line-height: 1;
 }
 
 .v-seat b {
-  color: rgba(255,255,255,.54);
-  font-size: 7px;
-  line-height: 1;
-}
-
-.v-seat-upper {
-  border-radius: 9px 9px 5px 5px;
-}
-
-.v-seat-lower {
-  border-radius: 5px 5px 9px 9px;
+  color: rgba(255,255,255,.42);
+  font-size: 8px;
 }
 
 .v-seat-selected {
-  border-color: rgba(183,132,255,.95) !important;
-  background: linear-gradient(145deg, #9b5cff, #7137c9) !important;
-  color: #fff !important;
-  box-shadow: 0 5px 18px rgba(139,78,255,.28), inset 0 1px 0 rgba(255,255,255,.22);
-}
-
-.v-seat-selected b {
-  color: rgba(255,255,255,.86);
+  border-color: rgba(180,125,255,.95) !important;
+  background: linear-gradient(
+    145deg,
+    rgba(168,85,247,.72),
+    rgba(112,54,190,.55)
+  ) !important;
+  box-shadow:
+    0 6px 18px rgba(168,85,247,.22),
+    inset 0 1px 0 rgba(255,255,255,.16);
 }
 
 .v-seat-taken {
-  color: rgba(255,255,255,.19);
-  background: #111117;
-  border-color: rgba(255,255,255,.045);
+  opacity: .28;
   cursor: not-allowed;
-  opacity: .72;
-}
-
-.v-seat-taken b {
-  color: rgba(255,255,255,.14);
+  background: #111117 !important;
 }
 
 .vizaran-bus-service {
   grid-column: 3 / 5;
-  grid-row: 8;
-  min-width: 0;
-  min-height: 0;
+  min-height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  border: 1px dashed rgba(255,255,255,.09);
+  border: 1px dashed rgba(255,255,255,.10);
   border-radius: 7px;
-  color: rgba(255,255,255,.24);
+  color: rgba(255,255,255,.3);
 }
 
 .vizaran-bus-service span {
-  font-size: 8px;
-  font-weight: 850;
+  font-size: 9px;
+  font-weight: 800;
 }
 
 .vizaran-bus-service small {
   font-size: 6px;
-  font-weight: 750;
   letter-spacing: .08em;
 }
 
@@ -3865,823 +3835,207 @@ html:has(.seat-selection-page) {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-top: 1px solid rgba(255,255,255,.055);
+  border-top: 1px solid rgba(255,255,255,.06);
   color: rgba(255,255,255,.18);
   font-size: 6px;
-  font-weight: 800;
   letter-spacing: .12em;
 }
 
 .vizaran-seat-sidebar {
-  min-width: 0;
-  min-height: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .vizaran-selected-card,
 .vizaran-info-card,
 .vizaran-legend {
+  padding: 15px;
   border: 1px solid rgba(255,255,255,.075);
-  border-radius: 15px;
-  background: rgba(255,255,255,.035);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
-}
-
-.vizaran-selected-card {
-  padding: 13px;
+  border-radius: 17px;
+  background: rgba(255,255,255,.025);
 }
 
 .vizaran-selected-number {
-  margin-top: 5px;
-  color: #b98aff;
-  font-size: 34px;
-  line-height: .95;
+  margin: 5px 0 2px;
+  color: #fff;
+  font-size: 27px;
   font-weight: 850;
-  letter-spacing: -.06em;
 }
 
 .vizaran-selected-card p {
-  margin: 6px 0 0;
-  color: rgba(255,255,255,.37);
-  font-size: 9px;
-  line-height: 1.3;
-}
-
-.vizaran-info-card {
-  padding: 11px;
+  margin: 0;
+  color: rgba(255,255,255,.4);
+  font-size: 10px;
 }
 
 .vizaran-feature {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-top: 9px;
-}
-
-.vizaran-feature + .vizaran-feature {
-  margin-top: 8px;
-  border-top: 1px solid rgba(255,255,255,.055);
+  gap: 10px;
+  padding: 8px 0;
 }
 
 .vizaran-feature-icon {
-  flex: 0 0 25px;
-  width: 25px;
-  height: 25px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: rgba(160,101,255,.1);
-  color: #b987ff;
-  font-size: 9px;
-  font-weight: 850;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  color: rgba(190,145,255,.9);
+  background: rgba(168,85,247,.10);
 }
 
-.vizaran-feature div {
-  min-width: 0;
+.vizaran-feature-icon svg {
+  width: 17px;
+  height: 17px;
 }
 
-.vizaran-feature strong,
-.vizaran-feature small {
-  display: block;
+.vizaran-feature-icon svg path {
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .vizaran-feature strong {
+  display: block;
   color: rgba(255,255,255,.78);
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .vizaran-feature small {
+  display: block;
   margin-top: 2px;
-  color: rgba(255,255,255,.3);
-  font-size: 7px;
+  color: rgba(255,255,255,.32);
+  font-size: 8px;
 }
 
 .vizaran-legend {
-  padding: 10px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .vizaran-legend > div {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-top: 7px;
   color: rgba(255,255,255,.42);
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .vizaran-legend i {
-  width: 8px;
-  height: 8px;
-  border-radius: 3px;
-  background: #282830;
-  border: 1px solid rgba(255,255,255,.1);
+  width: 11px;
+  height: 11px;
+  display: block;
+  border-radius: 4px;
+  background: #1b1b23;
+  border: 1px solid rgba(255,255,255,.09);
 }
 
 .vizaran-legend i.chosen {
-  background: #8e50ed;
-  border-color: #a976ff;
+  background: rgba(168,85,247,.75);
 }
 
 .vizaran-legend i.busy {
+  opacity: .28;
   background: #111117;
-  border-color: rgba(255,255,255,.045);
 }
 
 .vizaran-seat-bottom {
-  position: absolute;
-  left: 22px;
-  right: 22px;
+  position: fixed;
+  left: 50%;
   bottom: 10px;
-  min-height: 55px;
+  z-index: 50;
+  width: min(calc(100% - 24px), 560px);
+  transform: translateX(-50%);
   display: grid;
-  grid-template-columns: 1fr auto minmax(190px, 235px);
+  grid-template-columns: 1fr auto auto;
   align-items: center;
-  gap: 14px;
-  padding: 8px 9px 8px 15px;
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 17px;
-  background: rgba(17,17,23,.94);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 12px 40px rgba(0,0,0,.35);
+  gap: 10px;
+  padding: 10px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 18px;
+  background: rgba(16,16,22,.96);
+  box-shadow: 0 15px 45px rgba(0,0,0,.4);
+  backdrop-filter: blur(16px);
 }
 
 .vizaran-price span,
 .vizaran-bottom-seat span {
   display: block;
-  color: rgba(255,255,255,.3);
+  color: rgba(255,255,255,.32);
   font-size: 7px;
   font-weight: 800;
-  letter-spacing: .12em;
+  letter-spacing: .1em;
 }
 
-.vizaran-price strong {
-  display: block;
-  margin-top: 2px;
-  color: #fff;
-  font-size: 17px;
-  line-height: 1;
-  font-weight: 850;
-}
-
-.vizaran-bottom-seat {
-  padding-left: 14px;
-  border-left: 1px solid rgba(255,255,255,.07);
-}
-
+.vizaran-price strong,
 .vizaran-bottom-seat strong {
   display: block;
   margin-top: 2px;
-  color: #b98aff;
-  font-size: 15px;
-  line-height: 1;
-}
-
-.vizaran-seat-submit {
-  height: 39px;
-  border: 0;
-  border-radius: 11px;
-  padding: 0 13px 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   color: #fff;
-  background: linear-gradient(135deg, #9a5cff, #7138c7);
-  box-shadow: 0 7px 22px rgba(125,65,220,.24);
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 850;
-  letter-spacing: .06em;
-  cursor: pointer;
+  font-size: 13px;
 }
 
-.vizaran-seat-submit span {
-  font-size: 18px;
-  font-weight: 400;
-}
-
-.vizaran-seat-submit:disabled {
-  color: rgba(255,255,255,.35);
-  background: #24242c;
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-@media (max-width: 720px) {
-  .vizaran-seat-page {
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-
-  .vizaran-seat-content {
-    grid-template-columns: minmax(0, 1fr) 155px;
-    gap: 8px;
-  }
-
-  .vizaran-seat-sidebar {
-    gap: 5px;
-  }
-
-  .vizaran-selected-card,
-  .vizaran-info-card,
-  .vizaran-legend {
-    border-radius: 11px;
-    padding: 8px;
-  }
-
-  .vizaran-feature {
-    gap: 5px;
-    padding-top: 6px;
-  }
-
-  .vizaran-feature + .vizaran-feature {
-    margin-top: 5px;
-  }
-
-  .vizaran-feature-icon {
-    flex-basis: 21px;
-    width: 21px;
-    height: 21px;
-  }
-
-  .vizaran-feature strong {
-    font-size: 8px;
-  }
-
-  .vizaran-feature small {
-    font-size: 6px;
-  }
-
-  .vizaran-seat-bottom {
-    left: 12px;
-    right: 12px;
-  }
-}
-
-@media (max-height: 680px) {
-  .vizaran-seat-page {
-    padding-top: 10px;
-  }
-
-  .vizaran-seat-page > .vizaran-seat-top {
-    margin-bottom: 7px;
-  }
-
-  .vizaran-bus-front {
-    flex-basis: 53px;
-  }
-
-  .vizaran-bus-rear {
-    flex-basis: 18px;
-  }
-
-  .vizaran-selected-number {
-    font-size: 27px;
-  }
-
-  .vizaran-seat-bottom {
-    min-height: 48px;
-    bottom: 6px;
-  }
-
-  .vizaran-seat-submit {
-    height: 34px;
-  }
-}
-
-
-/* =========================================================
-   FINAL SEAT PAGE FIX
-   ========================================================= */
-
-/* Единый тёмный фон без фиолетового прямоугольника */
-.vizaran-seat-page {
-  position: relative !important;
-  width: 100% !important;
-  height: calc(100dvh - 20px) !important;
-  min-height: 0 !important;
-  max-height: calc(100dvh - 20px) !important;
-  box-sizing: border-box !important;
-
-  margin: 0 !important;
-  padding: 8px 12px 68px !important;
-
-  overflow: hidden !important;
-
-  background: transparent !important;
-  background-image: none !important;
-}
-
-/* Верх страницы немного выше, чтобы не было пустого пространства */
-.vizaran-seat-page > .vizaran-seat-top {
-  flex: 0 0 auto !important;
-  margin-top: 0 !important;
-  margin-bottom: 8px !important;
-}
-
-/* Только стрелка — текст "Назад" полностью скрываем */
-.vizaran-seat-page .back-button {
-  position: relative !important;
-
-  width: 38px !important;
-  height: 38px !important;
-  min-width: 38px !important;
-  min-height: 38px !important;
-
-  padding: 0 !important;
-  margin: 0 !important;
-
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-
-  overflow: hidden !important;
-
-  color: transparent !important;
-  font-size: 0 !important;
-  line-height: 1 !important;
-
-  background: rgba(255,255,255,.045) !important;
-  border: 1px solid rgba(255,255,255,.08) !important;
-  border-radius: 50% !important;
-
-  transform: none !important;
-}
-
-.vizaran-seat-page .back-button::before {
-  content: "←" !important;
-
-  position: absolute !important;
-  inset: 0 !important;
-
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-
-  color: rgba(255,255,255,.88) !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
-  line-height: 1 !important;
-}
-
-.vizaran-seat-page .back-button * {
-  display: none !important;
-}
-
-/* Сам контент занимает доступное место и визуально центрируется */
-.vizaran-seat-content {
-  flex: 1 1 auto !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-
-  display: grid !important;
-  align-items: center !important;
-
-  margin: 0 !important;
-}
-
-/* Автобус не должен прижиматься к верхнему краю */
-.vizaran-bus-wrap {
-  height: 100% !important;
-  min-height: 0 !important;
-
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-/* Убираем дополнительное свечение */
-.vizaran-seat-page::before,
-.vizaran-seat-page::after {
-  content: none !important;
-}
-
-/* Sidebar также центрируем относительно автобуса */
-.vizaran-seat-sidebar {
-  align-self: center !important;
-  max-height: 100% !important;
-  overflow: hidden !important;
-}
-
-/* Нижняя панель — всегда с зазором от краёв */
-.vizaran-seat-bottom {
-  position: absolute !important;
-
-  left: 12px !important;
-  right: 12px !important;
-  bottom: 10px !important;
-
-  width: auto !important;
-  max-width: none !important;
-
-  min-height: 52px !important;
-
-  box-sizing: border-box !important;
-
-  grid-template-columns: minmax(0, 1fr) auto minmax(145px, 190px) !important;
-
-  gap: 10px !important;
-
-  padding: 7px 8px 7px 12px !important;
-
-  overflow: hidden !important;
-}
-
-/* Кнопка больше не вылезает вправо */
-.vizaran-seat-submit {
-  width: 100% !important;
-  max-width: 175px !important;
-  min-width: 0 !important;
-
-  height: 36px !important;
-
-  box-sizing: border-box !important;
-
-  padding: 0 10px 0 13px !important;
-
-  overflow: hidden !important;
-  white-space: nowrap !important;
-}
-
-/* Цена до выбора места не должна выглядеть как готовая стоимость */
-.vizaran-price strong {
-  white-space: nowrap !important;
-}
-
-/* Чуть компактнее верхний блок */
-.vizaran-trip h1 {
-  font-size: clamp(17px, 2.2vw, 25px) !important;
-}
-
-/* Даём странице немного воздуха снизу и сверху */
-@media (max-height: 700px) {
-  .vizaran-seat-page {
-    height: calc(100dvh - 18px) !important;
-    max-height: calc(100dvh - 18px) !important;
-    padding-top: 5px !important;
-    padding-bottom: 64px !important;
-  }
-
-  .vizaran-seat-page > .vizaran-seat-top {
-    margin-bottom: 5px !important;
-  }
-
-  .vizaran-seat-bottom {
-    bottom: 8px !important;
-  }
-}
-
-@media (max-width: 420px) {
-  .vizaran-seat-page {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
-  }
-
-  .vizaran-seat-bottom {
-    left: 10px !important;
-    right: 10px !important;
-
-    grid-template-columns: minmax(0, 1fr) auto minmax(130px, 160px) !important;
-    gap: 7px !important;
-    padding-left: 9px !important;
-    padding-right: 7px !important;
-  }
-
-  .vizaran-seat-submit {
-    max-width: 155px !important;
-    padding-left: 10px !important;
-    padding-right: 8px !important;
-    font-size: 9px !important;
-  }
-}
-
-/* FINAL POSITION TUNING */
-.vizaran-seat-content {
-  transform: translateY(10px) !important;
-}
-
-.vizaran-seat-bottom {
-  bottom: 40px !important;
-}
-
-@media (max-height: 700px) {
-  .vizaran-seat-bottom {
-    bottom: 38px !important;
-  }
-}
-
-/* FINAL POSITION TUNING — ROUND 2 */
-.vizaran-seat-content {
-  transform: translateY(25px) !important;
-}
-
-.vizaran-seat-bottom {
-  bottom: 55px !important;
-}
-
-@media (max-height: 700px) {
-  .vizaran-seat-bottom {
-    bottom: 53px !important;
-  }
-}
-
-/* FINAL UI POLISH */
-.vizaran-trip-label,
-.vizaran-card-label,
-.vizaran-cabin-head span,
-.vizaran-cabin-head i,
-.vizaran-seat-labels,
-.vizaran-feature strong,
-.vizaran-feature small,
-.vizaran-legend > div,
-.vizaran-price span,
-.vizaran-bottom-seat span {
-  -webkit-font-smoothing: antialiased !important;
-  text-rendering: geometricPrecision !important;
-}
-
-.vizaran-trip-label,
-.vizaran-card-label {
-  font-size: 9px !important;
-  font-weight: 850 !important;
-  letter-spacing: .1em !important;
-}
-
-.vizaran-trip h1 {
-  font-weight: 850 !important;
-  letter-spacing: -.025em !important;
-}
-
-.vizaran-trip p {
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  color: rgba(255,255,255,.48) !important;
-}
-
-.vizaran-feature-icon {
-  width: 26px !important;
-  height: 26px !important;
-  min-width: 26px !important;
-  flex-basis: 26px !important;
-  border-radius: 50% !important;
-
-  display: grid !important;
-  place-items: center !important;
-
-  color: #b982ff !important;
-  background: rgba(139,78,235,.13) !important;
-  border: 1px solid rgba(169,112,255,.16) !important;
-
-  font-size: 9px !important;
-  font-weight: 850 !important;
-  line-height: 1 !important;
-}
-
-.vizaran-feature strong {
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  color: rgba(255,255,255,.86) !important;
-}
-
-.vizaran-feature small {
-  margin-top: 2px !important;
-  font-size: 7px !important;
-  font-weight: 650 !important;
-  color: rgba(255,255,255,.38) !important;
-}
-
-.vizaran-feature {
-  gap: 8px !important;
-}
-
-.vizaran-legend > div {
-  font-size: 8px !important;
-  font-weight: 650 !important;
-}
-
-.vizaran-seat-bottom {
-  bottom: 75px !important;
-
-  border-color: rgba(255,255,255,.11) !important;
-
-  background: rgba(18,18,25,.96) !important;
-
-  box-shadow:
-    0 18px 45px rgba(0,0,0,.55),
-    0 5px 18px rgba(0,0,0,.28),
-    inset 0 1px 0 rgba(255,255,255,.055) !important;
-}
-
-.vizaran-seat-submit {
-  max-width: 170px !important;
-  box-shadow:
-    0 8px 20px rgba(122,62,214,.28),
-    inset 0 1px 0 rgba(255,255,255,.16) !important;
-}
-
-@media (max-height: 700px) {
-  .vizaran-seat-bottom {
-    bottom: 73px !important;
-  }
-}
-
-@media (max-width: 420px) {
-  .vizaran-feature-icon {
-    width: 24px !important;
-    height: 24px !important;
-    min-width: 24px !important;
-    flex-basis: 24px !important;
-  }
-
-  .vizaran-seat-submit {
-    max-width: 155px !important;
-  }
-}
-
-
-/* FINAL AMENITIES + FLOATING BAR POLISH */
-.vizaran-feature-icon svg {
-  width: 16px !important;
-  height: 16px !important;
-  display: block !important;
-  overflow: visible !important;
-}
-
-.vizaran-wifi-icon svg path {
-  stroke: currentColor !important;
-  stroke-width: 2.1 !important;
-  stroke-linecap: round !important;
-}
-
-.vizaran-wifi-icon {
-  color: #b982ff !important;
-}
-
-.vizaran-ac-icon {
-  font-size: 15px !important;
-  font-weight: 500 !important;
-}
-
-.vizaran-wc-icon {
-  font-size: 8px !important;
-  font-weight: 850 !important;
-  letter-spacing: -.02em !important;
-}
-
-/* Правый информационный блок — легче и спокойнее */
-.vizaran-seat-sidebar .vizaran-feature strong {
-  font-weight: 650 !important;
-}
-
-.vizaran-seat-sidebar .vizaran-feature small {
-  font-weight: 500 !important;
-  color: rgba(255,255,255,.34) !important;
-}
-
-.vizaran-seat-sidebar .vizaran-card-label {
-  font-weight: 750 !important;
-}
-
-.vizaran-seat-sidebar .vizaran-legend > div {
-  font-weight: 500 !important;
-}
-
-/* Floating bottom bar — ещё 15px вверх */
-.vizaran-seat-bottom {
-  bottom: 90px !important;
-
-  box-shadow:
-    0 20px 50px rgba(0,0,0,.58),
-    0 7px 22px rgba(0,0,0,.32),
-    0 0 24px rgba(126,70,220,.08),
-    inset 0 1px 0 rgba(255,255,255,.06) !important;
-}
-
-@media (max-height: 700px) {
-  .vizaran-seat-bottom {
-    bottom: 88px !important;
-  }
-}
-
-
-
-/* =========================================================
-   VIZARAN CALENDAR — CLEAN PREMIUM UI
-   ========================================================= */
-
-.vizaran-calendar-page {
-  width: 100%;
-  min-height: 100%;
-  box-sizing: border-box;
-  padding: 24px 28px 24px;
-  color: #f7f4ff;
-  overflow-x: hidden;
-}
-
-/* HEADER */
-
-.vizaran-calendar-top {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) 82px;
-  align-items: center;
-  gap: 18px;
-  margin-bottom: 28px;
-}
-
-.vizaran-calendar-back {
-  width: 58px !important;
-  height: 58px !important;
-  min-width: 58px !important;
-  padding: 0 !important;
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50% !important;
-  font-size: 0 !important;
-  color: #e5d4ff !important;
-  background: rgba(35, 17, 73, .65) !important;
-  border: 1px solid rgba(137, 77, 255, .7) !important;
-  box-shadow:
-    0 0 24px rgba(116, 48, 255, .15),
-    inset 0 1px 0 rgba(255,255,255,.08);
-}
-
-.vizaran-calendar-back::before,
-.vizaran-calendar-back::after {
-  content: none !important;
-  display: none !important;
-}
-
-.vizaran-calendar-back {
-  position: relative;
-}
-
-.vizaran-calendar-back > * {
-  display: none;
-}
-
-.vizaran-calendar-back::after {
-  content: "←" !important;
-  display: block !important;
-  font-size: 28px !important;
-  line-height: 1 !important;
-}
-
-.vizaran-calendar-heading {
-  min-width: 0;
-}
-
-.vizaran-calendar-kicker {
-  display: block;
-  margin-bottom: 6px;
-  color: #a66cff;
-  font-size: 12px;
-  line-height: 1;
-  font-weight: 800;
-  letter-spacing: .045em;
-}
-
-.vizaran-calendar-heading h1 {
-  margin: 0;
-  color: #faf9ff;
-  font-size: clamp(28px, 5vw, 44px);
-  line-height: 1.02;
-  font-weight: 800;
-  letter-spacing: -.025em;
-}
-
-.vizaran-calendar-heading p {
-  margin: 10px 0 0;
-  color: rgba(188,174,226,.7);
-  font-size: 16px;
-  line-height: 1.2;
-}
-
-.vizaran-calendar-step {
+.vizaran-bottom-seat {
+  min-width: 45px;
   text-align: center;
 }
 
-.vizaran-calendar-step strong {
-  display: block;
-  color: #9c51ff;
-  font-size: clamp(46px, 6vw, 64px);
-  line-height: .9;
+.vizaran-seat-submit {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 13px;
+  color: #fff;
+  background: linear-gradient(135deg,#aa5af2,#873fd0);
+  box-shadow:
+    0 8px 22px rgba(168,85,247,.2),
+    inset 0 1px 0 rgba(255,255,255,.15);
+  font-family: inherit;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: -.06em;
 }
 
-.vizaran-calendar-step span {
-  display: block;
-  margin-top: 8px;
-  color: rgba(171,153,221,.65);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
+.vizaran-seat-submit:disabled {
+  opacity: .35;
+  box-shadow: none;
 }
+
+@media (min-width: 760px) {
+  .vizaran-seat-page {
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+
+  .vizaran-seat-content {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) 205px;
+    align-items: start;
+  }
+
+  .vizaran-bus-wrap {
+    min-width: 0;
+  }
+
+  .vizaran-seat-sidebar {
+    width: auto;
+  }
+
+  .vizaran-bus {
+    min-height: 560px;
+  }
+}
+
+/* =========================================================
+   END CLEAN SEAT SELECTION
+   ========================================================= */
 
 /* CALENDAR CARD */
 
