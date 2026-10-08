@@ -5558,14 +5558,14 @@ body:has(.passport-page) .passport-page .primary-button {
   .vizaran-seat-bottom .vizaran-price {
     text-align: left;
     flex-direction: row;
-    align-items: center;
+    align-items: baseline;
     white-space: nowrap;
   }
 
   .vizaran-seat-bottom .vizaran-bottom-seat {
     text-align: right;
     flex-direction: row;
-    align-items: center;
+    align-items: baseline;
     justify-content: flex-end;
     white-space: nowrap;
   }
