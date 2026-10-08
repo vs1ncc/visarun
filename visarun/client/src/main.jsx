@@ -269,6 +269,50 @@ function App() {
     }
   }
 
+  async function createBooking() {
+    if (!selectedSeat) {
+      alert("Выберите место");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          telegramId: user.telegramId,
+          route,
+          service: service.title,
+          priceRub: service.priceRub,
+          priceVnd: service.priceVnd,
+          seat: selectedSeat
+        })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error);
+      }
+
+      setOrder(data.order);
+
+      setTimeLeft(1200);
+
+      setScreen("payment");
+
+      loadOrders(user.telegramId);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function formatTime(seconds) {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
