@@ -5655,3 +5655,111 @@ html:has(.seat-selection-page) {
   margin: 0;
   padding: 0;
 }
+
+
+/* PREMIUM GLASS CONSENT */
+.passport-page .consent-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: 100%;
+  min-height: 54px;
+  box-sizing: border-box;
+  margin-top: 20px !important;
+  padding: 13px 14px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 16px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.055),
+      rgba(255,255,255,.018)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.055),
+    0 7px 22px rgba(0,0,0,.10);
+  cursor: pointer;
+  transition:
+    border-color .18s ease,
+    background .18s ease,
+    box-shadow .18s ease;
+}
+
+.passport-page .consent-card input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.passport-page .consent-check {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 7px;
+  color: transparent;
+  background: rgba(255,255,255,.035);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 3px 10px rgba(0,0,0,.12);
+  transition:
+    background .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease,
+    color .18s ease;
+}
+
+.passport-page .consent-check svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.passport-page .consent-text {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.passport-page .consent-card.is-checked {
+  border-color: rgba(168,85,247,.28);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(168,85,247,.095),
+      rgba(255,255,255,.025)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.07),
+    0 8px 24px rgba(168,85,247,.08);
+}
+
+.passport-page .consent-card.is-checked .consent-check {
+  color: #fff;
+  border-color: rgba(168,85,247,.72);
+  background: linear-gradient(
+    145deg,
+    rgba(168,85,247,.95),
+    rgba(124,58,237,.82)
+  );
+  box-shadow:
+    0 5px 15px rgba(168,85,247,.25),
+    inset 0 1px 0 rgba(255,255,255,.22);
+}
+
+.passport-page .consent-card:active {
+  transform: scale(.992);
+}
+
+.passport-page .consent-card .link-button {
+  display: inline;
+  color: #b76cff;
+  text-decoration: none;
+}
