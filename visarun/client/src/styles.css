@@ -5347,3 +5347,22 @@ html:has(.seat-selection-page) {
     font-size: 8px !important;
   }
 }
+
+/* Continue — disabled until date is selected */
+.vizaran-calendar-submit:disabled {
+  background: rgba(255,255,255,.10) !important;
+  border-color: rgba(255,255,255,.08) !important;
+  color: rgba(255,255,255,.30) !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+}
+
+.vizaran-calendar-submit:disabled span,
+.vizaran-calendar-submit:disabled b {
+  color: rgba(255,255,255,.30) !important;
+}
+
+.vizaran-calendar-submit:not(:disabled) {
+  cursor: pointer;
+}
