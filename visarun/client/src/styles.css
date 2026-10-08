@@ -5512,12 +5512,12 @@ body:has(.passport-page) .passport-page .primary-button {
 /* Увеличиваем оба информационных блока примерно на 20% */
 .vizaran-seat-bottom .vizaran-price span,
 .vizaran-seat-bottom .vizaran-bottom-seat span {
-  font-size: 0.97em;
+  font-size: 0.78em;
 }
 
 .vizaran-seat-bottom .vizaran-price strong,
 .vizaran-seat-bottom .vizaran-bottom-seat strong {
-  font-size: 0.97em;
+  font-size: 0.78em;
 }
 
 /* Кнопка — отдельная строка снизу */
