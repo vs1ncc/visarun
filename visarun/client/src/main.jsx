@@ -64,6 +64,11 @@ function App() {
   const [consent, setConsent] = useState(false);
 
   const [selectedSeat, setSelectedSeat] = useState(null);
+  const [selectedDrink, setSelectedDrink] = useState("");
+  const [selectedSnack, setSelectedSnack] = useState("");
+  const [motionSicknessTablets, setMotionSicknessTablets] = useState(false);
+  const [medicalWarningAccepted, setMedicalWarningAccepted] = useState(false);
+
 
   const [order, setOrder] = useState(null);
 
@@ -285,9 +290,22 @@ function App() {
     }
   }
 
+  function continueToOptions() {
+    if (!selectedSeat) {
+      alert("Выберите место");
+      return;
+    }
+    setScreen("options");
+  }
+
   async function createBooking() {
     if (!selectedSeat) {
       alert("Выберите место");
+      return;
+    }
+
+    if (!medicalWarningAccepted) {
+      alert("Подтвердите ознакомление с противопоказаниями");
       return;
     }
 
@@ -305,22 +323,26 @@ function App() {
           service: service.title,
           priceRub: service.priceRub,
           priceVnd: service.priceVnd,
-          seat: selectedSeat
+          seat: selectedSeat,
+          options: {
+            drink: selectedDrink || null,
+            snack: selectedSnack || null,
+            water: "Вода 1 литр",
+            motionSicknessTablets
+          },
+          medicalWarningAccepted
         })
       });
 
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error);
+        throw new Error(data.error || "Не удалось создать заказ");
       }
 
       setOrder(data.order);
-
       setTimeLeft(1200);
-
       setScreen("payment");
-
       loadOrders(user.telegramId);
     } catch (error) {
       alert(error.message);
@@ -433,8 +455,24 @@ function App() {
             selectedSeat={selectedSeat}
             setSelectedSeat={setSelectedSeat}
             onBack={() => setScreen("passport")}
-            onContinue={createBooking}
+            onContinue={continueToOptions}
             loading={loading}
+          />
+        )}
+
+        {screen === "options" && (
+          <OptionsSelection
+            drink={selectedDrink}
+            setDrink={setSelectedDrink}
+            snack={selectedSnack}
+            setSnack={setSelectedSnack}
+            tablets={motionSicknessTablets}
+            setTablets={setMotionSicknessTablets}
+            accepted={medicalWarningAccepted}
+            setAccepted={setMedicalWarningAccepted}
+            loading={loading}
+            onBack={() => setScreen("seats")}
+            onContinue={createBooking}
           />
         )}
 
@@ -805,7 +843,7 @@ function ServiceSelection({
     route === ROUTES.CAMBODIA;
 
   return (
-    <div>
+    <div className="service-selection-page">
 
       <BackButton onClick={onBack} />
 
@@ -834,11 +872,6 @@ function ServiceSelection({
         <strong>
           Рекомендации
         </strong>
-
-        <p>
-          • Возьмите таблетки от укачивания —
-          маршрут проходит через серпантин.
-        </p>
 
         <p>
           • Возьмите наличные для границы —
@@ -1553,6 +1586,94 @@ function SeatSelection({
 /* =========================
    PAYMENT
 ========================= */
+
+
+function OptionsSelection({
+  drink, setDrink,
+  snack, setSnack,
+  tablets, setTablets,
+  accepted, setAccepted,
+  loading, onBack, onContinue
+}) {
+  return (
+    <div className="vizaran-options-page">
+      <header className="vizaran-options-header">
+        <button type="button" className="vizaran-options-back" onClick={onBack}>
+          ← Назад
+        </button>
+        <span className="vizaran-options-eyebrow">ВАША ПОЕЗДКА</span>
+        <h1>Опции</h1>
+        <p>Выберите дополнительные удобства в дорогу</p>
+      </header>
+
+      <section className="vizaran-options-group">
+        <h2>Напитки</h2>
+        {["Кока-Кола", "Фанта", "Спрайт"].map(item => (
+          <label className="vizaran-option-row" key={item}>
+            <span>{item}</span>
+            <input type="radio" name="drink" checked={drink === item}
+              onChange={() => setDrink(item)} />
+          </label>
+        ))}
+        <label className="vizaran-option-row">
+          <span>Без выбора</span>
+          <input type="radio" name="drink" checked={drink === ""}
+            onChange={() => setDrink("")} />
+        </label>
+      </section>
+
+      <section className="vizaran-options-group">
+        <h2>Перекус и снеки</h2>
+        {["Чипсы Lays", "Печенье"].map(item => (
+          <label className="vizaran-option-row" key={item}>
+            <span>{item}</span>
+            <input type="radio" name="snack" checked={snack === item}
+              onChange={() => setSnack(item)} />
+          </label>
+        ))}
+        <label className="vizaran-option-row">
+          <span>Без выбора</span>
+          <input type="radio" name="snack" checked={snack === ""}
+            onChange={() => setSnack("")} />
+        </label>
+      </section>
+
+      <section className="vizaran-options-group">
+        <h2>Включено в поездку</h2>
+        <div className="vizaran-option-row">
+          <span>Вода 1 литр</span>
+          <span className="vizaran-option-included-label">Включено</span>
+        </div>
+      </section>
+
+      <section className="vizaran-options-group">
+        <h2>Таблетки от укачивания</h2>
+        <label className="vizaran-option-row">
+          <span>Добавить в поездку</span>
+          <input type="checkbox" checked={tablets}
+            onChange={event => setTablets(event.target.checked)} />
+        </label>
+      </section>
+
+      <section className="vizaran-medical-warning">
+        <strong>Внимание</strong>
+        <p>Сервис предоставляет транспортные и организационные услуги. Выдаваемые в дороге средства от укачивания имеют информационный/вспомогательный характер. Перед применением убедитесь в отсутствии у вас аллергических реакций и противопоказаний. За индивидуальную реакцию организма ответственность несет пассажир</p>
+        <label className="vizaran-medical-consent">
+          <input type="checkbox" checked={accepted}
+            onChange={event => setAccepted(event.target.checked)} />
+          <span>Я ознакомлен(-а) с возможными противопоказаниями и подтверждаю отсутствие аллергических реакций</span>
+        </label>
+      </section>
+
+      <div className="vizaran-options-footer">
+        <button type="button" className="vizaran-options-continue"
+          disabled={!accepted || loading} onClick={onContinue}>
+          {loading ? "СОЗДАЁМ ЗАКАЗ..." : "ПРОДОЛЖИТЬ"} <span>→</span>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function Payment({
   order,
