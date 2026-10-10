@@ -426,13 +426,9 @@ function App() {
         throw new Error(data.error);
       }
 
-      alert(
-        "Подтверждение отправлено. Ожидайте проверки оплаты."
-      );
+      await loadOrders(user.telegramId);
 
-      loadOrders(user.telegramId);
-
-      setScreen("bookings");
+      setScreen("success");
     } catch (error) {
       alert(error.message);
     } finally {
@@ -537,6 +533,21 @@ function App() {
             onUpload={uploadReceipt}
             loading={loading}
           />
+        )}
+
+        {screen === "success" && (
+          <div className="success-page">
+            <div className="success-icon" aria-hidden="true">✓</div>
+            <h1>Чек отправлен на проверку</h1>
+            <p>Мы проверим оплату и обновим информацию в разделе бронирований.</p>
+            <button
+              type="button"
+              className="success-button"
+              onClick={() => setScreen("bookings")}
+            >
+              В бронирования
+            </button>
+          </div>
         )}
 
         {screen === "bookings" && (
