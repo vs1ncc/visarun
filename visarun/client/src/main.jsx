@@ -1479,41 +1479,6 @@ function Payment({
           <small>Скоро</small>
         </div>
 
-        <div className="payment-method disabled">
-          <img
-            className="payment-method-logo payment-method-logo-google-pay"
-            src="/images/payments/google-pay-logo.png.webp"
-            alt="Google Pay"
-          />
-          <small>Скоро</small>
-        </div>
-
-        <div className="payment-method disabled">
-          <img
-            className="payment-method-logo payment-method-logo-apple-pay"
-            src="/images/payments/apple-pay-logo.png.png"
-            alt="Apple Pay"
-          />
-          <small>Скоро</small>
-        </div>
-
-        <div className="payment-method disabled">
-          <img
-            className="payment-method-logo payment-method-logo-paypal"
-            src="/images/payments/paypal-logo.png.png"
-            alt="PayPal"
-          />
-          <small>Скоро</small>
-        </div>
-
-        <div className="payment-method disabled">
-          <img
-            className="payment-method-logo payment-method-logo-crypto"
-            src="/images/payments/crypto-logo.png.webp"
-            alt="Crypto"
-          />
-          <small>Скоро</small>
-        </div>
       </div>
 
       <div className="bank-card">
