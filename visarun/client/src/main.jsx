@@ -41,11 +41,11 @@ const SERVICES = {
 };
 
 function App() {
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-  }, [screen]);
-
   const [screen, setScreen] = useState("home");
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [screen]);
 
   const [user, setUser] = useState(null);
 
