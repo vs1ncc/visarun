@@ -1207,10 +1207,6 @@ function SeatSelection({
           <p>Выберите место в автобусе</p>
         </div>
 
-        <div className="vizaran-step">
-          <span>01</span>
-          <small>МЕСТО</small>
-        </div>
       </div>
 
       <div className="vizaran-seat-content">
