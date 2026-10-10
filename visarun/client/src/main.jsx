@@ -1433,31 +1433,16 @@ function Payment({
       </div>
 
       <div className="order-summary">
-
-        <span>
-          Заказ
-        </span>
-
-        <strong>
-          {order.id}
-        </strong>
-
-        <span>
-          {order.route}
-        </span>
-
-        <span>
-          {order.service}
-        </span>
-
-        <span>
-          Место {order.seat}
-        </span>
-
-        <strong>
-          {order.priceRub.toLocaleString("ru-RU")} ₽
-        </strong>
-
+        <div className="order-line">
+          <span>Заказ</span>
+          <strong>{order.id}</strong>
+        </div>
+        <div className="order-line"><span>{order.route}</span></div>
+        <div className="order-line"><span>{order.service}</span></div>
+        <div className="order-line"><span>Место {order.seat}</span></div>
+        <div className="order-line order-total">
+          <strong>{order.priceRub.toLocaleString("ru-RU")} ₽</strong>
+        </div>
       </div>
 
       <div className="payment-methods">
@@ -1496,46 +1481,21 @@ function Payment({
       </div>
 
       <div className="bank-card">
-
-        <span>
-          Переведите
-        </span>
-
-        <strong>
-          {order.priceRub.toLocaleString("ru-RU")} ₽
-        </strong>
-
-        <div className="recipient">
-          <span>
-            Получатель
-          </span>
-
-          <strong>
-            Ирода К.
-          </strong>
+        <div className="bank-detail">
+          <span>Переведите —</span>
+          <strong>{order.priceRub.toLocaleString("ru-RU")} ₽</strong>
         </div>
-
+        <div className="bank-detail">
+          <span>Получатель —</span>
+          <strong>Ирода К.</strong>
+        </div>
+        <div className="bank-name">Альфа Банк</div>
         <div className="phone-row">
-
-          <strong>
-            +7 965 431 72 07
-          </strong>
-
-          <button
-            onClick={copyPhone}
-            className="copy-button"
-          >
-            {copied
-              ? "Скопировано"
-              : "Копировать"}
+          <strong>+7 965 431 72 07</strong>
+          <button onClick={copyPhone} className="copy-button">
+            {copied ? "Скопировано" : "Копировать"}
           </button>
-
         </div>
-
-        <span>
-          Сбер Банк
-        </span>
-
       </div>
 
       <div className="upload-card">

@@ -5974,3 +5974,134 @@ body:has(.vizaran-seat-page) .content {
     transform: translateY(40px) !important;
   }
 }
+
+
+/* Payment layout fixes */
+.order-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.order-summary .order-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.order-summary .order-line span,
+.order-summary .order-line strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.order-summary .order-line:first-child {
+  align-items: flex-start;
+}
+
+.order-summary .order-total {
+  margin-top: 2px;
+}
+
+.bank-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.bank-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px;
+  margin-bottom: 3px;
+  line-height: 1.25;
+}
+
+.bank-detail span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.bank-detail strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.bank-name {
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.phone-row {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.phone-row > strong {
+  overflow-wrap: anywhere;
+}
+
+.copy-button {
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(168,85,247,.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.upload-card {
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.upload-card input[type="file"] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-top: 10px;
+  padding: 9px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 12px;
+  color: var(--text-2);
+  background: rgba(255,255,255,.045);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 12px;
+}
+
+.upload-card input[type="file"]::file-selector-button {
+  margin-right: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 9px;
+  color: var(--text);
+  background: rgba(255,255,255,.09);
+  cursor: pointer;
+}
+
+.file-selected {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 380px) {
+  .order-summary,
+  .bank-card,
+  .upload-card {
+    padding: 14px;
+  }
+
+  .phone-row {
+    align-items: flex-start;
+  }
+}
