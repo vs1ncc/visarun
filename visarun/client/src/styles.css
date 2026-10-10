@@ -5930,3 +5930,20 @@ body:has(.vizaran-seat-page) .content {
     transform: none !important;
   }
 }
+
+/* FINAL — align seat screen with calendar viewport position */
+@media (max-width: 700px) {
+  body:has(.vizaran-seat-page) .content {
+    padding-top: 100px !important;
+    transform: translateY(-50px) !important;
+  }
+
+  .vizaran-seat-page {
+    padding-top: 12px !important;
+  }
+
+  .vizaran-seat-top {
+    margin-top: 0 !important;
+    transform: none !important;
+  }
+}
