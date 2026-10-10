@@ -5863,3 +5863,32 @@ body:has(.vizaran-seat-page) .content {
     transform: translateY(-10px) !important;
   }
 }
+
+/* FINAL — match seat header and back button to calendar */
+@media (max-width: 700px) {
+  .vizaran-seat-page {
+    padding-top: 0 !important;
+  }
+
+  .vizaran-seat-top {
+    margin-top: -8px !important;
+    transform: translateY(-8px) !important;
+    grid-template-columns: 36px minmax(0, 1fr) auto !important;
+    gap: 14px !important;
+  }
+
+  .vizaran-seat-top .back-button {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    padding: 0 !important;
+    border-radius: 13px !important;
+    background: rgba(255,255,255,.045) !important;
+    border: 1px solid rgba(255,255,255,.06) !important;
+  }
+
+  .vizaran-seat-top .back-button .back-arrow svg {
+    width: 19px !important;
+    height: 19px !important;
+  }
+}
