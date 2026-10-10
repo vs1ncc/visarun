@@ -4993,6 +4993,14 @@ html:has(.seat-selection-page) {
 }
 
 
+
+/* Glass checkbox for passport data consent */
+.passport-page .consent-card .consent-check {
+  border-color: rgba(255,255,255,.3);
+  background: linear-gradient(145deg, rgba(255,255,255,.09), rgba(255,255,255,.025));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+
 /* PREMIUM GLASS CONSENT */
 .passport-page .consent-card {
   position: relative;
@@ -7027,11 +7035,61 @@ body:has(.bank-card) .content {
 
 .vizaran-option-row input,
 .vizaran-medical-consent input {
-  width: 19px;
-  height: 19px;
-  flex: 0 0 19px;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
   margin: 0;
-  accent-color: var(--purple);
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  border: 1px solid rgba(255,255,255,.28);
+  background: linear-gradient(145deg, rgba(255,255,255,.09), rgba(255,255,255,.025));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 3px 10px rgba(0,0,0,.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.vizaran-option-row input[type="radio"] {
+  border-radius: 50%;
+}
+
+.vizaran-option-row input[type="checkbox"],
+.vizaran-medical-consent input[type="checkbox"] {
+  border-radius: 6px;
+}
+
+.vizaran-option-row input[type="radio"]:checked {
+  border-color: rgba(192,132,252,.9);
+  background: radial-gradient(circle, #d8b4fe 0 28%, rgba(168,85,247,.72) 34%, rgba(168,85,247,.18) 72%);
+  box-shadow: 0 0 0 3px rgba(168,85,247,.09), 0 0 14px rgba(168,85,247,.24), inset 0 1px 0 rgba(255,255,255,.28);
+}
+
+.vizaran-option-row input[type="checkbox"]:checked,
+.vizaran-medical-consent input[type="checkbox"]:checked {
+  border-color: rgba(192,132,252,.9);
+  background: linear-gradient(145deg, rgba(192,132,252,.95), rgba(126,34,206,.78));
+  box-shadow: 0 0 0 3px rgba(168,85,247,.09), 0 0 14px rgba(168,85,247,.2), inset 0 1px 0 rgba(255,255,255,.3);
+}
+
+.vizaran-option-row input[type="checkbox"]:checked::after,
+.vizaran-medical-consent input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.vizaran-option-row input:focus-visible,
+.vizaran-medical-consent input:focus-visible {
+  outline: 2px solid rgba(192,132,252,.75);
+  outline-offset: 3px;
 }
 
 .vizaran-option-included-label {
