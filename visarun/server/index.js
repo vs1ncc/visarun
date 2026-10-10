@@ -1113,10 +1113,6 @@ app.get("/api/cron/orders", async (req, res) => {
     return res.status(401).json({ success: false, error: "Unauthorized" });
   }
 
-  if (!bot) {
-    return res.status(503).json({ success: false, error: "Telegram bot is not configured" });
-  }
-
   try {
     const orders = await readJson(ORDERS_FILE);
     const now = Date.now();
