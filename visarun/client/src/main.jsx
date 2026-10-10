@@ -1232,9 +1232,7 @@ function CalendarSelection({
         </button>
 
         <div className="vizaran-calendar-heading">
-          <span className="vizaran-calendar-kicker">
-            ВЫБЕРИТЕ ДАТУ
-          </span>
+
 
           <h1>{route || "Выбранный рейс"}</h1>
 

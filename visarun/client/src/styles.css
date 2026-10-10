@@ -6800,3 +6800,8 @@ body:has(.vizaran-seat-page) .content {
   top: 50%;
   transform: translateY(-50%);
 }
+
+/* Calendar screen: move all content up by 10px */
+.vizaran-calendar-page {
+  transform: translateY(-10px);
+}
