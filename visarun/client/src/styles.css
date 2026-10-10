@@ -5805,3 +5805,15 @@ body:has(.vizaran-seat-page) .content {
     margin-bottom: 30px !important;
   }
 }
+
+/* ALIGN SEAT HEADER WITH CALENDAR HEADER */
+@media (max-width: 700px) {
+  .vizaran-seat-page {
+    padding-top: 12px !important;
+  }
+
+  .vizaran-seat-top {
+    margin-top: 0 !important;
+    margin-bottom: 16px !important;
+  }
+}
