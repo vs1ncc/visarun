@@ -6529,3 +6529,69 @@ body:has(.vizaran-seat-page) .content {
     grid-template-columns: 1fr;
   }
 }
+
+/* Refine readability of homepage sections below directions */
+.home-info-section h2,
+.home-story-section h2,
+.home-support-section h2,
+.home-loyalty-section h2,
+.home-faq-section h2,
+.home-final-cta h2 {
+  font-weight: 600;
+  letter-spacing: -0.35px;
+  line-height: 1.3;
+}
+
+.home-section-kicker {
+  font-weight: 600;
+  letter-spacing: 0.8px;
+}
+
+.home-section-intro,
+.home-story-section > p,
+.home-support-section > p,
+.home-loyalty-section > p,
+.home-final-cta > p {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.75;
+  letter-spacing: 0;
+}
+
+.home-benefit h3,
+.home-support-note strong {
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.home-benefit p,
+.home-support-note p,
+.home-honesty-note p,
+.home-faq-item p {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.75;
+  letter-spacing: 0;
+}
+
+.home-faq-item summary {
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.home-price-comparison span {
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.55;
+}
+
+.home-old-price,
+.home-new-price {
+  font-weight: 600;
+}
+
+.home-loyalty-footnote {
+  font-size: 12px !important;
+  line-height: 1.7 !important;
+}
