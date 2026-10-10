@@ -6229,3 +6229,51 @@ body:has(.vizaran-seat-page) .content {
   gap: 3px;
 }
 
+
+/* FINAL FIX: центрируем логотипы и статус во всех карточках оплаты */
+.payment-methods .payment-method {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: nowrap !important;
+  text-align: center;
+  min-height: 58px;
+  gap: 10px;
+}
+
+/* Visa и Mastercard: одинаковые габариты */
+.payment-methods .payment-method-logo[src*="visa-logo"],
+.payment-methods .payment-method-logo[src*="mastercard-logo"] {
+  display: block !important;
+  width: 90px !important;
+  height: 28px !important;
+  max-width: 90px !important;
+  flex: 0 0 90px !important;
+  object-fit: contain !important;
+  transform: none !important;
+}
+
+/* Только 3px между Visa и Mastercard */
+.payment-methods .payment-method:has(img[src*="visa-logo"]) {
+  gap: 3px !important;
+}
+
+/* VietQR и Crypto: размер изображений не меняем */
+.payment-methods .payment-method-logo-vietqr,
+.payment-methods .payment-method-logo-crypto {
+  flex: 0 1 auto;
+  object-fit: contain;
+}
+
+/* Текст статуса центрируется по вертикали */
+.payment-methods .payment-method small,
+.payment-methods .payment-method-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
