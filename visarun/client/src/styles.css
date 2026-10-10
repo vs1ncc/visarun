@@ -5967,3 +5967,10 @@ body:has(.vizaran-seat-page) .content {
     top: auto !important;
   }
 }
+
+/* Move only the continue button block down another 20px */
+@media (max-width: 700px) {
+  .vizaran-seat-page .vizaran-seat-bottom {
+    transform: translateY(40px) !important;
+  }
+}
