@@ -6595,3 +6595,72 @@ body:has(.vizaran-seat-page) .content {
   font-size: 12px !important;
   line-height: 1.7 !important;
 }
+
+/* Match lower homepage typography to the airy top section */
+.home-info-section,
+.home-story-section,
+.home-support-section,
+.home-loyalty-section,
+.home-faq-section,
+.home-final-cta {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.home-info-section h2,
+.home-story-section h2,
+.home-support-section h2,
+.home-loyalty-section h2,
+.home-faq-section h2,
+.home-final-cta h2 {
+  font-weight: 400;
+  letter-spacing: 0.15px;
+  line-height: 1.42;
+}
+
+.home-section-kicker {
+  font-weight: 500;
+  letter-spacing: 1.35px;
+  line-height: 1.6;
+}
+
+.home-section-intro,
+.home-story-section > p,
+.home-support-section > p,
+.home-loyalty-section > p,
+.home-final-cta > p,
+.home-benefit p,
+.home-support-note p,
+.home-honesty-note p,
+.home-faq-item p {
+  color: rgba(255, 255, 255, 0.76);
+  font-weight: 300;
+  letter-spacing: 0.18px;
+  line-height: 1.85;
+}
+
+.home-benefit h3,
+.home-support-note strong,
+.home-faq-item summary {
+  font-weight: 400;
+  letter-spacing: 0.12px;
+  line-height: 1.7;
+}
+
+.home-price-comparison span {
+  font-weight: 300;
+  letter-spacing: 0.35px;
+  line-height: 1.7;
+}
+
+.home-old-price,
+.home-new-price {
+  font-weight: 400;
+  letter-spacing: 0.25px;
+}
+
+.home-loyalty-footnote {
+  font-weight: 300 !important;
+  letter-spacing: 0.18px;
+  line-height: 1.8 !important;
+}
