@@ -6275,3 +6275,10 @@ body:has(.vizaran-seat-page) .content {
   height: 60px;
   object-fit: contain;
 }
+
+
+/* Service selection: compact bottom spacing and 30px page clearance */
+.recommendation {
+  margin-bottom: 30px;
+}
+
