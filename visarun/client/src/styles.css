@@ -7208,3 +7208,134 @@ body:has(.vizaran-options-page) .app {
   }
 }
 
+
+
+/* Booking category tabs */
+.bookings-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 20px;
+  margin-bottom: 18px;
+  padding: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.bookings-tab {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 5px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.bookings-tab.active {
+  background: #a855f7;
+  color: #fff;
+  font-weight: 600;
+}
+
+.bookings-tab:focus-visible {
+  outline: 2px solid #c084fc;
+  outline-offset: 2px;
+}
+
+
+/* VISA / STAMP PERMISSION SCREEN */
+.permission-type-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0 26px;
+}
+
+.permission-type-option {
+  min-height: 54px;
+  padding: 12px 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  background: rgba(255,255,255,.035);
+  color: rgba(255,255,255,.78);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease;
+}
+
+.permission-type-option.active {
+  border-color: #a855f7;
+  background: rgba(168,85,247,.15);
+  color: #fff;
+}
+
+.permission-date-label {
+  display: block;
+  margin: 8px 0 10px;
+  color: rgba(255,255,255,.78);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.passport-page #vietnam-entry-date {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 13px;
+  background: rgba(255,255,255,.045);
+  color: #fff;
+  color-scheme: dark;
+  font: inherit;
+}
+
+.permission-validity {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid rgba(168,85,247,.24);
+  border-radius: 16px;
+  background: rgba(168,85,247,.075);
+}
+
+.permission-validity span {
+  color: rgba(255,255,255,.68);
+  font-size: 12px;
+}
+
+.permission-validity strong {
+  color: #fff;
+  font-size: 23px;
+  font-weight: 650;
+  letter-spacing: .2px;
+}
+
+.permission-validity small {
+  color: rgba(255,255,255,.48);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.passport-page > .vizaran-calendar-submit {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.passport-page > .vizaran-calendar-submit:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}

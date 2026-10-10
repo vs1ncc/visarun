@@ -53,6 +53,35 @@ function App() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [service, setService] = useState(null);
 
+  const [permissionType, setPermissionType] = useState("STAMP");
+  const [vietnamEntryDate, setVietnamEntryDate] = useState("");
+  const [permissionValidUntil, setPermissionValidUntil] = useState("");
+
+  function calculatePermissionDate(entryDate, type) {
+    if (!entryDate) return "";
+
+    const date = new Date(`${entryDate}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return "";
+
+    date.setDate(date.getDate() + (type === "VISA" ? 90 : 45));
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  function updateEntryDate(value) {
+    setVietnamEntryDate(value);
+    setPermissionValidUntil(calculatePermissionDate(value, permissionType));
+  }
+
+  function updatePermissionType(value) {
+    setPermissionType(value);
+    setPermissionValidUntil(calculatePermissionDate(vietnamEntryDate, value));
+  }
+
   const [passengers, setPassengers] = useState([
     {
       fullName: "",
@@ -207,7 +236,13 @@ function App() {
   function openService(serviceType) {
     setService(SERVICES[serviceType]);
     setSelectedDate(null);
-    setScreen("passport");
+
+    const type = serviceType === "VISA" ? "VISA" : "STAMP";
+    setPermissionType(type);
+    setVietnamEntryDate("");
+    setPermissionValidUntil("");
+
+    setScreen("permission");
   }
 
   function openPrivacy() {
@@ -319,8 +354,12 @@ function App() {
         },
         body: JSON.stringify({
           telegramId: user.telegramId,
+          travelDate: selectedDate,
           route,
           service: service.title,
+          permissionType,
+          vietnamEntryDate,
+          permissionValidUntil,
           priceRub: service.priceRub,
           priceVnd: service.priceVnd,
           seat: selectedSeat,
@@ -432,6 +471,18 @@ function App() {
             setSelectedDate={setSelectedDate}
             onBack={() => setScreen("service")}
             onContinue={() => setScreen("seats")}
+          />
+        )}
+
+        {screen === "permission" && (
+          <PermissionSelection
+            permissionType={permissionType}
+            onPermissionTypeChange={updatePermissionType}
+            entryDate={vietnamEntryDate}
+            onEntryDateChange={updateEntryDate}
+            validUntil={permissionValidUntil}
+            onBack={() => setScreen("service")}
+            onContinue={() => setScreen("passport")}
           />
         )}
 
@@ -943,6 +994,81 @@ function ServiceCard({
       </span>
 
     </button>
+  );
+}
+
+
+function PermissionSelection({
+  permissionType,
+  onPermissionTypeChange,
+  entryDate,
+  onEntryDateChange,
+  validUntil,
+  onBack,
+  onContinue
+}) {
+  function displayDate(value) {
+    if (!value) return "Выберите дату въезда";
+    const [year, month, day] = value.split("-");
+    return `${day}.${month}.${year}`;
+  }
+
+  return (
+    <div className="passport-page">
+      <BackButton onClick={onBack} />
+
+      <h1>Виза/Штамп</h1>
+      <p className="subtitle">Укажите данные разрешения на пребывание во Вьетнаме</p>
+
+      <section className="passenger-block">
+        <h3>Выберите тип разрешения</h3>
+        <div className="permission-type-options">
+          <button
+            type="button"
+            className={`permission-type-option ${permissionType === "STAMP" ? "active" : ""}`}
+            onClick={() => onPermissionTypeChange("STAMP")}
+            aria-pressed={permissionType === "STAMP"}
+          >
+            Штамп · 45 дней
+          </button>
+          <button
+            type="button"
+            className={`permission-type-option ${permissionType === "VISA" ? "active" : ""}`}
+            onClick={() => onPermissionTypeChange("VISA")}
+            aria-pressed={permissionType === "VISA"}
+          >
+            Виза · 90 дней
+          </button>
+        </div>
+
+        <label className="permission-date-label" htmlFor="vietnam-entry-date">
+          Дата въезда во Вьетнам
+        </label>
+        <input
+          id="vietnam-entry-date"
+          className="birth-date-input"
+          type="date"
+          value={entryDate}
+          onChange={(event) => onEntryDateChange(event.target.value)}
+          required
+        />
+
+        <div className="permission-validity">
+          <span>Дата разрешённого пребывания до:</span>
+          <strong>{displayDate(validUntil)}</strong>
+          <small>Расчётный срок: {permissionType === "VISA" ? 90 : 45} дней с даты въезда</small>
+        </div>
+      </section>
+
+      <button
+        type="button"
+        className="vizaran-calendar-submit"
+        disabled={!entryDate || !validUntil}
+        onClick={onContinue}
+      >
+        <span>ПРОДОЛЖИТЬ</span>
+      </button>
+    </div>
   );
 }
 
@@ -1833,10 +1959,33 @@ function Payment({
 ========================= */
 
 function Bookings({ orders }) {
+  const [activeTab, setActiveTab] = useState("upcoming");
+
   const visaRunOrders = orders.filter((order) => {
     const route = String(order.route || "").toLowerCase();
     return route.includes("лаос") || route.includes("камбод");
   });
+
+  function getTravelDate(order) {
+    const value = order.travelDate || order.selectedDate || order.date;
+    if (!value) return null;
+
+    if (typeof value === "string") {
+      const match = value.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+      if (match) {
+        return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+      }
+    }
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function isCancelled(order) {
+    const status = String(order.status || "").toLowerCase();
+    return ["cancelled", "canceled", "отменено", "отменён", "отменен", "отменена"]
+      .includes(status) || Boolean(order.cancelledAt);
+  }
 
   function formatValidity(order) {
     const value =
@@ -1852,89 +2001,120 @@ function Bookings({ orders }) {
     return date.toLocaleDateString("ru-RU");
   }
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const filteredOrders = visaRunOrders.filter((order) => {
+    if (activeTab === "cancelled") return isCancelled(order);
+    if (isCancelled(order)) return false;
+
+    const travelDate = getTravelDate(order);
+
+    if (activeTab === "previous") {
+      return travelDate !== null && travelDate < today;
+    }
+
+    // Existing bookings without a saved date stay visible under upcoming.
+    return travelDate === null || travelDate >= today;
+  });
+
+  const tabs = [
+    { id: "upcoming", label: "Предстоящие" },
+    { id: "previous", label: "Предыдущие" },
+    { id: "cancelled", label: "Отменённые" }
+  ];
+
   return (
     <div className="bookings-page">
-
       <header className="page-header">
         <span className="page-kicker">FESTO / ПОЕЗДКИ</span>
         <h1>Бронирования</h1>
-        <p>
-          Ваши забронированные поездки
-        </p>
+        <p>Ваши забронированные поездки</p>
       </header>
 
-      {visaRunOrders.length === 0 ? (
-        <div className="empty-bookings">
+      <div className="bookings-tabs" role="tablist" aria-label="Категории поездок">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            className={`bookings-tab ${activeTab === tab.id ? "active" : ""}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-          <div className="empty-mark">
-            <span>✦</span>
-          </div>
-
-          <div>
-            <h3>Пока нет поездок</h3>
-            <p>
-              После бронирования поездка
-              появится здесь.
-            </p>
-          </div>
-
+      {filteredOrders.length === 0 ? (
+        <div className="bookings-empty">
+          <div className="empty-icon">↗</div>
+          <h3>
+            {activeTab === "upcoming"
+              ? "Пока нет предстоящих поездок"
+              : activeTab === "previous"
+                ? "Предыдущих поездок пока нет"
+                : "Отменённых поездок нет"}
+          </h3>
+          <p>
+            {activeTab === "upcoming"
+              ? "Здесь появятся ваши забронированные поездки в Лаос и Камбоджу."
+              : activeTab === "previous"
+                ? "Здесь будут отображаться завершённые поездки."
+                : "Здесь будут отображаться отменённые бронирования."}
+          </p>
         </div>
       ) : (
         <div className="bookings-list">
-
-          {visaRunOrders.map((order) => {
+          {filteredOrders.map((order) => {
             const validity = formatValidity(order);
+            const travelDate = getTravelDate(order);
 
             return (
-              <div
-                className="booking-card"
-                key={order.id}
-              >
-
-                <div className="booking-route-line">
-                  <div className="booking-route-dot"></div>
-
-                  <div>
-                    <span>ВИЗАРАН</span>
-                    <h3>{order.route}</h3>
-                  </div>
+              <div className="booking-card" key={order.id}>
+                <div className="booking-card-header">
+                  <span className="booking-route-label">ВИЗАРАН</span>
+                  <span className="booking-status">
+                    {isCancelled(order) ? "Отменено" : order.status || "Забронировано"}
+                  </span>
                 </div>
 
-                <div className="booking-details">
+                <h3>{order.route}</h3>
 
-                  <div>
-                    <span>Услуга</span>
-                    <strong>{order.service}</strong>
+                {travelDate && (
+                  <div className="booking-info-row">
+                    <span>Дата поездки</span>
+                    <strong>{travelDate.toLocaleDateString("ru-RU")}</strong>
                   </div>
+                )}
 
-                  <div>
-                    <span>Место</span>
-                    <strong>{order.seat || "—"}</strong>
-                  </div>
-
-                  {validity && (
-                    <div className="booking-validity">
-                      <span>Действует до</span>
-                      <strong>{validity}</strong>
-                    </div>
-                  )}
-
+                <div className="booking-info-row">
+                  <span>Услуга</span>
+                  <strong>{order.service}</strong>
                 </div>
 
-                <div className="booking-bottom">
+                <div className="booking-info-row">
+                  <span>Место</span>
+                  <strong>{order.seat || "—"}</strong>
+                </div>
+
+                {validity && (
+                  <div className="booking-info-row">
+                    <span>Штамп действителен до</span>
+                    <strong>{validity}</strong>
+                  </div>
+                )}
+
+                <div className="booking-info-row">
                   <span>Стоимость поездки</span>
-                  <strong>
-                    {order.priceRub?.toLocaleString("ru-RU")} ₽
-                  </strong>
+                  <strong>{order.priceRub?.toLocaleString("ru-RU")} ₽</strong>
                 </div>
-
               </div>
             );
           })}
-
         </div>
       )}
-
     </div>
   );
 }
