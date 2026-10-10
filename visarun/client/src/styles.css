@@ -6295,3 +6295,9 @@ body:has(.vizaran-seat-page) .content {
   gap: 3px !important;
 }
 
+
+/* Интервал 1.5px между Visa и Mastercard */
+.payment-methods .payment-method:has(img[src*="visa-logo"]) {
+  gap: 1.5px !important;
+}
+
