@@ -6301,3 +6301,10 @@ body:has(.vizaran-seat-page) .content {
   gap: 1.5px !important;
 }
 
+
+/* FIX: точный горизонтальный интервал между Visa и Mastercard */
+.payment-methods .payment-method.disabled:has(img[src*="visa-logo"]) {
+  column-gap: 1.5px !important;
+  gap: 1.5px !important;
+}
+
