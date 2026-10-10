@@ -325,73 +325,223 @@ app.get("/api/profile/:telegramId", async (req, res) => {
    CREATE ORDER
 ========================= */
 
+app.post("/api/orders/draft", async (req, res) => {
+  try {
+    const { telegramId, route, service, permissionType, priceRub, priceVnd } = req.body;
+
+    if (!telegramId || !route || !service) {
+      return res.status(400).json({
+        success: false,
+        error: "Не хватает данных для черновика"
+      });
+    }
+
+    const users = await readJson(USERS_FILE);
+    const orders = await readJson(ORDERS_FILE);
+    const user = users.find(
+      (item) => String(item.telegramId) === String(telegramId)
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "Пользователь не найден"
+      });
+    }
+
+    const existing = orders.find((item) =>
+      String(item.telegramId) === String(telegramId) &&
+      item.route === route &&
+      item.service === service &&
+      ["draft", "in_progress", "awaiting_payment"].includes(item.status) &&
+      !item.cancelledAt &&
+      (item.status !== "awaiting_payment" ||
+        !item.paymentDeadline ||
+        item.paymentDeadline > Date.now())
+    );
+
+    if (existing) {
+      return res.json({ success: true, order: existing });
+    }
+
+    const now = Date.now();
+    const order = {
+      id: `FESTO-${now}-${crypto.randomBytes(3).toString("hex")}`,
+      telegramId,
+      username: user.username,
+      firstName: user.firstName,
+      phone: user.phone,
+      route,
+      service,
+      permissionType: permissionType || null,
+      priceRub: priceRub ?? null,
+      priceVnd: priceVnd ?? null,
+      status: "draft",
+      currentStep: "permission",
+      draftExpiresAt: now + 24 * 60 * 60 * 1000,
+      lastReminderAt: null,
+      createdAt: new Date(now).toISOString(),
+      updatedAt: new Date(now).toISOString()
+    };
+
+    orders.push(order);
+    await writeJson(ORDERS_FILE, orders);
+
+    return res.json({ success: true, order });
+  } catch (error) {
+    console.error("CREATE DRAFT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось создать черновик"
+    });
+  }
+});
+
+app.patch("/api/orders/:id", async (req, res) => {
+  try {
+    const orders = await readJson(ORDERS_FILE);
+    const order = orders.find((item) => item.id === req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: "Заказ не найден"
+      });
+    }
+
+    if (
+      !req.body.telegramId ||
+      String(order.telegramId) !== String(req.body.telegramId)
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "Нет доступа к заказу"
+      });
+    }
+
+    if (["payment_check", "confirmed", "cancelled", "canceled"].includes(order.status)) {
+      return res.status(409).json({
+        success: false,
+        error: "Этот заказ больше нельзя редактировать"
+      });
+    }
+
+    const allowed = [
+      "route", "service", "permissionType", "vietnamEntryDate",
+      "permissionValidUntil", "priceRub", "priceVnd", "travelDate",
+      "seat", "options", "medicalWarningAccepted", "passport", "currentStep"
+    ];
+
+    for (const key of allowed) {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+        order[key] = req.body[key];
+      }
+    }
+
+    const now = Date.now();
+
+    if (req.body.startPayment === true) {
+      order.status = "awaiting_payment";
+      order.paymentDeadline = now + 20 * 60 * 1000;
+      order.lastPaymentReminderAt = null;
+    } else if (order.status === "draft") {
+      order.status = "in_progress";
+    }
+
+    order.updatedAt = new Date(now).toISOString();
+
+    await writeJson(ORDERS_FILE, orders);
+    return res.json({ success: true, order });
+  } catch (error) {
+    console.error("UPDATE ORDER ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось обновить заказ"
+    });
+  }
+});
+
 app.post("/api/orders", async (req, res) => {
-  const {
-    telegramId,
-    route,
-    service,
-    permissionType,
-    vietnamEntryDate,
-    permissionValidUntil,
-    priceRub,
-    priceVnd,
-    seat,
-    options,
-    medicalWarningAccepted
-  } = req.body;
+  try {
+    const { telegramId, draftOrderId, permissionType } = req.body;
 
-  const users = await readJson(USERS_FILE);
-  const orders = await readJson(ORDERS_FILE);
+    if (!telegramId || !draftOrderId) {
+      return res.status(400).json({
+        success: false,
+        error: "Не передан ID черновика"
+      });
+    }
 
-  const user = users.find(
-    (item) => String(item.telegramId) === String(telegramId)
-  );
+    const orders = await readJson(ORDERS_FILE);
+    const order = orders.find((item) => item.id === draftOrderId);
 
-  if (!user) {
-    return res.status(404).json({
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: "Черновик не найден. Начните бронирование заново."
+      });
+    }
+
+    if (String(order.telegramId) !== String(telegramId)) {
+      return res.status(403).json({
+        success: false,
+        error: "Нет доступа к заказу"
+      });
+    }
+
+    if (!["draft", "in_progress"].includes(order.status)) {
+      return res.status(409).json({
+        success: false,
+        error: "Этот черновик уже нельзя отправить на оплату"
+      });
+    }
+
+    if (order.draftExpiresAt && order.draftExpiresAt <= Date.now()) {
+      return res.status(409).json({
+        success: false,
+        error: "Срок черновика истёк. Начните бронирование заново."
+      });
+    }
+
+    const users = await readJson(USERS_FILE);
+    const user = users.find(
+      (item) => String(item.telegramId) === String(telegramId)
+    );
+
+    if (!user || !user.passport) {
+      return res.status(400).json({
+        success: false,
+        error: "Паспортные данные не заполнены"
+      });
+    }
+
+    Object.assign(order, {
+      permissionType: permissionType || order.permissionType || null,
+      vietnamEntryDate: req.body.vietnamEntryDate || null,
+      permissionValidUntil: req.body.permissionValidUntil || null,
+      travelDate: req.body.travelDate || null,
+      priceRub: req.body.priceRub ?? order.priceRub,
+      priceVnd: req.body.priceVnd ?? order.priceVnd,
+      seat: req.body.seat || null,
+      options: req.body.options || {},
+      medicalWarningAccepted: req.body.medicalWarningAccepted === true,
+      passport: user.passport,
+      status: "awaiting_payment",
+      paymentDeadline: Date.now() + 20 * 60 * 1000,
+      lastPaymentReminderAt: null,
+      updatedAt: new Date().toISOString()
+    });
+
+    await writeJson(ORDERS_FILE, orders);
+
+    return res.json({ success: true, order });
+  } catch (error) {
+    console.error("CREATE PAYMENT ORDER ERROR:", error);
+    return res.status(500).json({
       success: false,
-      error: "Пользователь не найден"
+      error: "Не удалось подготовить оплату"
     });
   }
-
-  if (!user.passport) {
-    return res.status(400).json({
-      success: false,
-      error: "Паспортные данные не заполнены"
-    });
-  }
-
-  const order = {
-    id: `FESTO-${Date.now()}`,
-    telegramId,
-    username: user.username,
-    firstName: user.firstName,
-    phone: user.phone,
-    route,
-    service,
-    permissionType: permissionType || null,
-    vietnamEntryDate: vietnamEntryDate || null,
-    permissionValidUntil: permissionValidUntil || null,
-    priceRub,
-    priceVnd,
-    seat,
-    options: options || {},
-    medicalWarningAccepted: medicalWarningAccepted === true,
-    passport: user.passport,
-    status: "awaiting_payment",
-    paymentDeadline: Date.now() + 20 * 60 * 1000,
-    receipt: null,
-    createdAt: new Date().toISOString()
-  };
-
-  orders.push(order);
-
-  await writeJson(ORDERS_FILE, orders);
-
-  res.json({
-    success: true,
-    order
-  });
 });
 
 /* =========================
@@ -952,6 +1102,118 @@ app.get("/api/health", async (req, res) => {
     service: "FESTO Vizaran",
     redis: redisStatus
   });
+});
+
+
+app.get("/api/cron/orders", async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  const supplied = req.headers.authorization || "";
+
+  if (!secret || supplied !== `Bearer ${secret}`) {
+    return res.status(401).json({ success: false, error: "Unauthorized" });
+  }
+
+  if (!bot) {
+    return res.status(503).json({ success: false, error: "Telegram bot is not configured" });
+  }
+
+  try {
+    const orders = await readJson(ORDERS_FILE);
+    const now = Date.now();
+    let changed = false;
+    const result = { draftReminders: 0, paymentReminders: 0, cancelled: 0 };
+
+    for (const order of orders) {
+      if (["payment_check", "confirmed", "cancelled", "canceled"].includes(order.status)) {
+        continue;
+      }
+
+      if (["draft", "in_progress"].includes(order.status)) {
+        const expiresAt = Number(order.draftExpiresAt || 0);
+
+        if (expiresAt && now >= expiresAt) {
+          order.status = "cancelled";
+          order.cancelledAt = new Date(now).toISOString();
+          order.cancelReason = "draft_expired";
+          order.updatedAt = new Date(now).toISOString();
+          changed = true;
+          result.cancelled++;
+          try {
+            await bot.telegram.sendMessage(
+              order.telegramId,
+              "Черновик бронирования отменён: прошло 24 часа. Если поездка ещё актуальна, начните бронирование заново."
+            );
+          } catch (error) {
+            console.error("Draft cancellation notification failed:", error.message);
+          }
+          continue;
+        }
+
+        const last = Number(order.lastReminderAt || 0);
+        if ((!last && now - Number(order.createdAt ? Date.parse(order.createdAt) : now) >= 5 * 60 * 60 * 1000) ||
+            (last && now - last >= 5 * 60 * 60 * 1000)) {
+          try {
+            await bot.telegram.sendMessage(
+              order.telegramId,
+              "Вы начали бронирование поездки, но не закончили. Продолжить?"
+            );
+            order.lastReminderAt = now;
+            order.updatedAt = new Date(now).toISOString();
+            changed = true;
+            result.draftReminders++;
+          } catch (error) {
+            console.error("Draft reminder failed:", error.message);
+          }
+        }
+        continue;
+      }
+
+      if (order.status === "awaiting_payment") {
+        const deadline = Number(order.paymentDeadline || 0);
+
+        if (deadline && now >= deadline) {
+          order.status = "cancelled";
+          order.cancelledAt = new Date(now).toISOString();
+          order.cancelReason = "payment_timeout";
+          order.updatedAt = new Date(now).toISOString();
+          changed = true;
+          result.cancelled++;
+          try {
+            await bot.telegram.sendMessage(
+              order.telegramId,
+              "Время оплаты истекло, поэтому бронирование отменено. Вы можете оформить его заново."
+            );
+          } catch (error) {
+            console.error("Payment cancellation notification failed:", error.message);
+          }
+          continue;
+        }
+
+        const last = Number(order.lastPaymentReminderAt || 0);
+        const reminderBase = last || Number(Date.parse(order.updatedAt || order.createdAt) || now);
+        if (now - reminderBase >= 5 * 60 * 1000) {
+          try {
+            await bot.telegram.sendMessage(
+              order.telegramId,
+              "Вы начали бронирование поездки, но не закончили. Продолжить оплату?"
+            );
+            order.lastPaymentReminderAt = now;
+            order.updatedAt = new Date(now).toISOString();
+            changed = true;
+            result.paymentReminders++;
+          } catch (error) {
+            console.error("Payment reminder failed:", error.message);
+          }
+        }
+      }
+    }
+
+    if (changed) await writeJson(ORDERS_FILE, orders);
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    console.error("ORDER CRON ERROR:", error);
+    return res.status(500).json({ success: false, error: "Order processing failed" });
+  }
 });
 
 if (process.env.VERCEL !== "1") {
