@@ -6277,3 +6277,9 @@ body:has(.vizaran-seat-page) .content {
   flex: 0 0 auto;
 }
 
+
+/* Visa на 20% меньше Mastercard */
+.payment-methods .payment-method-logo[src*="visa-logo"] {
+  transform: scale(0.8) !important;
+}
+
