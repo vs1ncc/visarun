@@ -6805,3 +6805,59 @@ body:has(.vizaran-seat-page) .content {
 .vizaran-calendar-page {
   transform: translateY(-10px);
 }
+
+
+/* SERVICE SELECTION — fixed screen with 30px bottom clearance */
+html:has(.service-selection-page),
+body:has(.service-selection-page) {
+  overflow: hidden !important;
+}
+
+.service-selection-page {
+  height: calc(100dvh - 30px) !important;
+  max-height: calc(100dvh - 30px) !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  padding-bottom: 30px !important;
+}
+
+.service-selection-page .recommendation {
+  margin-bottom: 0 !important;
+}
+
+/* CALENDAR — remove excess lower space, preserve 15px below Continue */
+@media (max-width: 700px) {
+  html:has(.vizaran-calendar-page),
+  body:has(.vizaran-calendar-page) {
+    overflow: hidden !important;
+    height: 100% !important;
+  }
+
+  .vizaran-calendar-page {
+    height: calc(100dvh - 15px) !important;
+    max-height: calc(100dvh - 15px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding-bottom: 15px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .vizaran-calendar-card {
+    flex: 0 1 auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .vizaran-calendar-bottom {
+    flex: 0 0 auto !important;
+    margin-top: 10px !important;
+    padding: 0 !important;
+  }
+
+  .vizaran-calendar-submit {
+    margin-bottom: 0 !important;
+  }
+}
