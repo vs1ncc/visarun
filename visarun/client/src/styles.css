@@ -5817,3 +5817,22 @@ body:has(.vizaran-seat-page) .content {
     margin-bottom: 16px !important;
   }
 }
+
+/* FINAL ALIGNMENT — seat page top matches calendar page */
+@media (max-width: 700px) {
+  .vizaran-seat-page {
+    padding-top: 12px !important;
+    margin-top: 0 !important;
+    transform: none !important;
+  }
+
+  .vizaran-seat-top {
+    padding-top: 0 !important;
+    margin-top: -8px !important;
+    transform: translateY(-8px) !important;
+  }
+
+  .vizaran-seat-content {
+    margin-top: -8px !important;
+  }
+}
