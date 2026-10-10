@@ -6777,3 +6777,26 @@ body:has(.vizaran-seat-page) .content {
 .home-primary-button:has(.home-button-arrow) {
   grid-template-columns: minmax(0, 1fr) 36px;
 }
+
+/* Restore original CTA text centering */
+.home-primary-button {
+  display: flex;
+  justify-content: center;
+  text-indent: -3px;
+}
+
+.home-primary-button:has(.home-button-arrow) {
+  display: flex;
+  justify-content: center;
+}
+
+.home-primary-button:has(.home-button-arrow)::before {
+  content: none;
+}
+
+.home-primary-button .home-button-arrow {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+}
