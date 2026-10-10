@@ -7,6 +7,7 @@ import path from "path";
 import multer from "multer";
 import OpenAI from "openai";
 import { Telegraf } from "telegraf";
+import { Redis } from "@upstash/redis";
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 3000;
+
 
 const DATA_DIR = process.env.VERCEL === "1"
   ? path.join("/tmp", "festo-vizaran-data")
@@ -30,24 +32,50 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 
-if (!fs.existsSync(USERS_FILE)) {
-  fs.writeFileSync(USERS_FILE, "[]");
+const redis = process.env.UPSTASH_REDIS_REST_URL &&
+              process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN
+    })
+  : null;
+
+if (!redis) {
+  console.warn("Upstash Redis is not configured; persistent storage is unavailable.");
 }
 
-if (!fs.existsSync(ORDERS_FILE)) {
-  fs.writeFileSync(ORDERS_FILE, "[]");
-}
-
-function readJson(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch {
-    return [];
+async function readJson(file) {
+  if (!redis) {
+    throw new Error("Upstash Redis is not configured");
   }
+
+  const key = `vizaran:${path.basename(file, ".json")}`;
+  const stored = await redis.get(key);
+
+  if (stored !== null && stored !== undefined) {
+    return stored;
+  }
+
+  // One-time import from an existing local data file, if present.
+  let initial = [];
+  try {
+    initial = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (!Array.isArray(initial)) initial = [];
+  } catch {
+    initial = [];
+  }
+
+  await redis.set(key, initial);
+  return initial;
 }
 
-function writeJson(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+async function writeJson(file, data) {
+  if (!redis) {
+    throw new Error("Upstash Redis is not configured");
+  }
+
+  const key = `vizaran:${path.basename(file, ".json")}`;
+  await redis.set(key, data);
 }
 
 const bot = process.env.BOT_TOKEN
@@ -126,7 +154,7 @@ function validateTelegramInitData(initData) {
    AUTH
 ========================= */
 
-app.post("/api/auth", (req, res) => {
+app.post("/api/auth", async (req, res) => {
   const { initData } = req.body;
 
   const telegramUser = validateTelegramInitData(initData);
@@ -138,7 +166,7 @@ app.post("/api/auth", (req, res) => {
     });
   }
 
-  const users = readJson(USERS_FILE);
+  const users = await readJson(USERS_FILE);
 
   let user = users.find(
     (item) => item.telegramId === telegramUser.id
@@ -165,7 +193,7 @@ app.post("/api/auth", (req, res) => {
     user.photoUrl = telegramUser.photo_url || user.photoUrl || "";
   }
 
-  writeJson(USERS_FILE, users);
+  await writeJson(USERS_FILE, users);
 
   res.json({
     success: true,
@@ -177,10 +205,10 @@ app.post("/api/auth", (req, res) => {
    SAVE PHONE
 ========================= */
 
-app.post("/api/profile/phone", (req, res) => {
+app.post("/api/profile/phone", async (req, res) => {
   const { telegramId, phone } = req.body;
 
-  const users = readJson(USERS_FILE);
+  const users = await readJson(USERS_FILE);
 
   const user = users.find(
     (item) => String(item.telegramId) === String(telegramId)
@@ -194,7 +222,7 @@ app.post("/api/profile/phone", (req, res) => {
 
   user.phone = phone;
 
-  writeJson(USERS_FILE, users);
+  await writeJson(USERS_FILE, users);
 
   res.json({
     success: true
@@ -205,7 +233,7 @@ app.post("/api/profile/phone", (req, res) => {
    SAVE PASSPORT
 ========================= */
 
-app.post("/api/profile/passport", (req, res) => {
+app.post("/api/profile/passport", async (req, res) => {
   const {
     telegramId,
     passengers,
@@ -219,7 +247,7 @@ app.post("/api/profile/passport", (req, res) => {
     });
   }
 
-  const users = readJson(USERS_FILE);
+  const users = await readJson(USERS_FILE);
 
   const user = users.find(
     (item) => String(item.telegramId) === String(telegramId)
@@ -262,7 +290,7 @@ app.post("/api/profile/passport", (req, res) => {
     consentAt: new Date().toISOString()
   };
 
-  writeJson(USERS_FILE, users);
+  await writeJson(USERS_FILE, users);
 
   res.json({
     success: true
@@ -273,8 +301,8 @@ app.post("/api/profile/passport", (req, res) => {
    GET PROFILE
 ========================= */
 
-app.get("/api/profile/:telegramId", (req, res) => {
-  const users = readJson(USERS_FILE);
+app.get("/api/profile/:telegramId", async (req, res) => {
+  const users = await readJson(USERS_FILE);
 
   const user = users.find(
     (item) =>
@@ -297,18 +325,20 @@ app.get("/api/profile/:telegramId", (req, res) => {
    CREATE ORDER
 ========================= */
 
-app.post("/api/orders", (req, res) => {
+app.post("/api/orders", async (req, res) => {
   const {
     telegramId,
     route,
     service,
     priceRub,
     priceVnd,
-    seat
+    seat,
+    options,
+    medicalWarningAccepted
   } = req.body;
 
-  const users = readJson(USERS_FILE);
-  const orders = readJson(ORDERS_FILE);
+  const users = await readJson(USERS_FILE);
+  const orders = await readJson(ORDERS_FILE);
 
   const user = users.find(
     (item) => String(item.telegramId) === String(telegramId)
@@ -339,6 +369,8 @@ app.post("/api/orders", (req, res) => {
     priceRub,
     priceVnd,
     seat,
+    options: options || {},
+    medicalWarningAccepted: medicalWarningAccepted === true,
     passport: user.passport,
     status: "awaiting_payment",
     paymentDeadline: Date.now() + 20 * 60 * 1000,
@@ -348,7 +380,7 @@ app.post("/api/orders", (req, res) => {
 
   orders.push(order);
 
-  writeJson(ORDERS_FILE, orders);
+  await writeJson(ORDERS_FILE, orders);
 
   res.json({
     success: true,
@@ -371,7 +403,7 @@ app.post(
   "/api/orders/:id/receipt",
   upload.single("receipt"),
   async (req, res) => {
-    const orders = readJson(ORDERS_FILE);
+    const orders = await readJson(ORDERS_FILE);
 
     const order = orders.find(
       (item) => item.id === req.params.id
@@ -400,7 +432,7 @@ app.post(
 
     order.status = "payment_check";
 
-    writeJson(ORDERS_FILE, orders);
+    await writeJson(ORDERS_FILE, orders);
 
     await notifyAdmin(order);
 
@@ -561,7 +593,7 @@ ${order.passport.passportNumber}
 ========================= */
 
 app.post("/api/orders/:id/confirm", async (req, res) => {
-  const orders = readJson(ORDERS_FILE);
+  const orders = await readJson(ORDERS_FILE);
 
   const order = orders.find(
     (item) => item.id === req.params.id
@@ -576,7 +608,7 @@ app.post("/api/orders/:id/confirm", async (req, res) => {
   order.status = "confirmed";
   order.confirmedAt = new Date().toISOString();
 
-  writeJson(ORDERS_FILE, orders);
+  await writeJson(ORDERS_FILE, orders);
 
   if (bot) {
     try {
@@ -615,8 +647,8 @@ ${order.seat}
    GET USER ORDERS
 ========================= */
 
-app.get("/api/orders/user/:telegramId", (req, res) => {
-  const orders = readJson(ORDERS_FILE);
+app.get("/api/orders/user/:telegramId", async (req, res) => {
+  const orders = await readJson(ORDERS_FILE);
 
   const userOrders = orders.filter(
     (item) =>
@@ -885,11 +917,11 @@ ${process.env.COMPANY_EMAIL}
 ${new Date().toLocaleDateString("ru-RU")}
 `;
 
-app.get("/api/legal/privacy", (req, res) => {
+app.get("/api/legal/privacy", async (req, res) => {
   res.type("text/plain; charset=utf-8").send(privacyText);
 });
 
-app.get("/api/legal/terms", (req, res) => {
+app.get("/api/legal/terms", async (req, res) => {
   res.type("text/plain; charset=utf-8").send(termsText);
 });
 
@@ -897,10 +929,22 @@ app.get("/api/legal/terms", (req, res) => {
    HEALTH
 ========================= */
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", async (req, res) => {
+  let redisStatus = "not_configured";
+
+  if (redis) {
+    try {
+      await redis.ping();
+      redisStatus = "connected";
+    } catch {
+      redisStatus = "error";
+    }
+  }
+
   res.json({
     ok: true,
-    service: "FESTO Vizaran"
+    service: "FESTO Vizaran",
+    redis: redisStatus
   });
 });
 
