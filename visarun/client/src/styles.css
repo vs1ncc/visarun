@@ -6231,30 +6231,17 @@ body:has(.vizaran-seat-page) .content {
 
 
 
-/* Финальное расположение логотипов Visa и Mastercard */
+
+/* Visa и Mastercard: интервал 1px */
 .payment-methods .payment-method.disabled:has(img[src*="visa-logo"]) {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  flex-wrap: nowrap !important;
-  gap: 0 !important;
   column-gap: 0 !important;
+  gap: 0 !important;
 }
 
 .payment-methods .payment-method.disabled:has(img[src*="visa-logo"]) img[src*="visa-logo"] {
-  width: 90px !important;
-  height: 28px !important;
-  flex: 0 0 90px !important;
-  object-fit: contain !important;
-  transform: scale(0.8) !important;
-  margin-right: 1.5px !important;
+  margin-right: 1px !important;
 }
 
-.payment-methods .payment-method.disabled:has(img[src*="visa-logo"]) img[src*="mastercard-logo"] {
-  width: 90px !important;
-  height: 28px !important;
-  flex: 0 0 90px !important;
-  object-fit: contain !important;
-  transform: scale(1.25) !important;
-  margin: 0 !important;
+.payment-methods .payment-method.disabled:has(img[src*="visa-logo"]) small {
+  margin-left: 10px !important;
 }
