@@ -7135,7 +7135,7 @@ body:has(.bank-card) .content {
 
 body:has(.vizaran-options-page) .content {
   overflow: visible;
-  padding-top: 38px;
+  padding-top: 58px;
   padding-bottom: 0;
 }
 
