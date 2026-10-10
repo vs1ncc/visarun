@@ -5956,3 +5956,14 @@ body:has(.vizaran-seat-page) .content {
     top: 20px !important;
   }
 }
+
+
+/* Seat selection: move bus, seat blocks and continue button down 20px.
+   Keep the trip title and back button untouched. */
+@media (max-width: 700px) {
+  .vizaran-seat-page .vizaran-seat-content,
+  .vizaran-seat-page .vizaran-seat-bottom {
+    transform: translateY(20px) !important;
+    top: auto !important;
+  }
+}
