@@ -5768,3 +5768,40 @@ body:has(.passport-page) .passport-page .primary-button {
   stroke-linejoin: round !important;
   opacity: 1 !important;
 }
+
+/* FINAL — compact seat page with exactly 30px below booking panel */
+body:has(.vizaran-seat-page) .app,
+body:has(.vizaran-seat-page) .content {
+  min-height: 0 !important;
+  height: auto !important;
+  padding-bottom: 0 !important;
+  transform: none !important;
+}
+
+.vizaran-seat-page {
+  min-height: 0 !important;
+  height: auto !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.vizaran-seat-page > .vizaran-seat-bottom {
+  margin-bottom: 30px !important;
+}
+
+@media (max-width: 700px) {
+  body:has(.vizaran-seat-page) .app,
+  body:has(.vizaran-seat-page) .content {
+    min-height: 0 !important;
+    height: auto !important;
+    padding-bottom: 0 !important;
+  }
+
+  .vizaran-seat-page {
+    padding-bottom: 0 !important;
+  }
+
+  .vizaran-seat-page > .vizaran-seat-bottom {
+    margin-bottom: 30px !important;
+  }
+}
