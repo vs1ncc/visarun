@@ -6261,3 +6261,17 @@ body:has(.vizaran-seat-page) .content {
   position: relative !important;
   top: 0 !important;
 }
+
+
+/* Make Apple Pay and PayPal logos match the other payment methods */
+.payment-method img[src*="apple-pay-logo"] {
+  width: 150px;
+  height: 60px;
+  object-fit: contain;
+}
+
+.payment-method img[src*="paypal-logo"] {
+  width: 150px;
+  height: 60px;
+  object-fit: contain;
+}
