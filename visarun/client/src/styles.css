@@ -5851,3 +5851,15 @@ body:has(.vizaran-seat-page) .content {
     margin-top: 14px !important;
   }
 }
+
+/* FINAL — reduce empty space above seat map header */
+@media (max-width: 700px) {
+  .vizaran-seat-page {
+    padding-top: 0 !important;
+  }
+
+  .vizaran-seat-top {
+    margin-top: -10px !important;
+    transform: translateY(-10px) !important;
+  }
+}
