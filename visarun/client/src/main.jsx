@@ -41,6 +41,10 @@ const SERVICES = {
 };
 
 function App() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [screen]);
+
   const [screen, setScreen] = useState("home");
 
   const [user, setUser] = useState(null);
