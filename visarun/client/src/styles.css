@@ -6282,3 +6282,250 @@ body:has(.vizaran-seat-page) .content {
   margin-bottom: 30px;
 }
 
+
+/* HOME: selling sections */
+#directions {
+  scroll-margin-top: 20px;
+}
+
+.home-primary-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 20px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 15px;
+  background: linear-gradient(115deg, #a855f7, #7c3aed);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 28px rgba(124, 58, 237, .2);
+}
+
+.home-primary-button span {
+  font-size: 22px;
+}
+
+.home-info-section,
+.home-story-section,
+.home-support-section,
+.home-loyalty-section,
+.home-faq-section,
+.home-final-cta {
+  margin-top: 34px;
+  padding: 22px 18px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+}
+
+.home-section-kicker {
+  margin-bottom: 12px;
+  color: #c084fc;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+}
+
+.home-info-section h2,
+.home-story-section h2,
+.home-support-section h2,
+.home-loyalty-section h2,
+.home-faq-section h2,
+.home-final-cta h2 {
+  margin: 0 0 12px;
+  color: #fff;
+  font-size: 23px;
+  line-height: 1.25;
+  letter-spacing: -.45px;
+}
+
+.home-section-intro,
+.home-story-section > p,
+.home-support-section > p,
+.home-loyalty-section > p,
+.home-final-cta > p {
+  margin: 0 0 15px;
+  color: rgba(255,255,255,.68);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.home-benefit-list {
+  display: grid;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.home-benefit {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.home-benefit-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(168,85,247,.13);
+  color: #d8b4fe;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.home-benefit h3 {
+  margin: 1px 0 5px;
+  color: #fff;
+  font-size: 15px;
+}
+
+.home-benefit p,
+.home-support-note p {
+  margin: 0;
+  color: rgba(255,255,255,.64);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.home-honesty-note,
+.home-support-note {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(168,85,247,.09);
+}
+
+.home-honesty-note > span,
+.home-support-note > span {
+  color: #c084fc;
+  font-size: 19px;
+}
+
+.home-honesty-note p {
+  margin: 0;
+  color: rgba(255,255,255,.84);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.home-support-note strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.home-price-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 20px 0 12px;
+}
+
+.home-price-comparison > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 11px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: rgba(0,0,0,.15);
+}
+
+.home-price-comparison span {
+  color: rgba(255,255,255,.6);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.home-old-price {
+  color: rgba(255,255,255,.55);
+  font-size: 17px;
+  text-decoration: line-through;
+}
+
+.home-new-price {
+  color: #d8b4fe;
+  font-size: 17px;
+}
+
+.home-loyalty-footnote {
+  font-size: 11px !important;
+}
+
+.home-faq-item {
+  border-bottom: 1px solid rgba(255,255,255,.09);
+}
+
+.home-faq-item:last-child {
+  border-bottom: 0;
+}
+
+.home-faq-item summary {
+  position: relative;
+  padding: 16px 24px 16px 0;
+  color: rgba(255,255,255,.92);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  cursor: pointer;
+  list-style: none;
+}
+
+.home-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.home-faq-item summary::after {
+  content: "+";
+  position: absolute;
+  top: 13px;
+  right: 0;
+  color: #c084fc;
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.home-faq-item[open] summary::after {
+  content: "−";
+}
+
+.home-faq-item p {
+  margin: -2px 0 16px;
+  color: rgba(255,255,255,.65);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.home-final-cta {
+  margin-bottom: 24px;
+  border-color: rgba(168,85,247,.24);
+  background: radial-gradient(ellipse at top right, rgba(168,85,247,.15), transparent 65%),
+              rgba(255,255,255,.025);
+}
+
+@media (max-width: 360px) {
+  .home-info-section,
+  .home-story-section,
+  .home-support-section,
+  .home-loyalty-section,
+  .home-faq-section,
+  .home-final-cta {
+    padding: 19px 15px;
+  }
+
+  .home-price-comparison {
+    grid-template-columns: 1fr;
+  }
+}

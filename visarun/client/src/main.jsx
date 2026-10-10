@@ -498,6 +498,13 @@ function App() {
 ========================= */
 
 function Home({ onRoute, user }) {
+  const scrollToDirections = () => {
+    document.getElementById("directions")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  };
+
   return (
     <div className="home-page">
 
@@ -506,18 +513,14 @@ function Home({ onRoute, user }) {
           <div className="eyebrow">FESTO</div>
           <h1>Визаран</h1>
           <p>
-    Из Нячанга в Лаос и Камбоджу<br />
-    Из Дананга в Лаос
-  </p>
+            Из Нячанга в Лаос и Камбоджу<br />
+            Из Дананга в Лаос
+          </p>
         </div>
 
         <div className="telegram-avatar">
           {user?.photoUrl ? (
-            <img
-              src={user.photoUrl}
-              alt=""
-              className="telegram-avatar-image"
-            />
+            <img src={user.photoUrl} alt="" className="telegram-avatar-image" />
           ) : (
             user?.firstName?.[0] || "F"
           )}
@@ -526,59 +529,214 @@ function Home({ onRoute, user }) {
 
       <section className="hero">
         <div className="hero-glow"></div>
-
         <div className="hero-content">
           <span className="hero-label">ВИЗАРАН ИЗ НЯЧАНГА/ДАНАНГА</span>
-
-          <h2>
-            Быстрое
-            <br />
-            бронирование поездки
-          </h2>
-
+          <h2>Больше заботы.<br />Меньше лишних расходов.</h2>
           <p>
-            Выберите направление и подходящий
-            вариант пребывания.
+            Выберите направление, подходящий вариант пребывания
+            и забронируйте поездку за несколько шагов.
           </p>
+          <button className="home-primary-button" onClick={scrollToDirections}>
+            Выбрать направление
+            <span aria-hidden="true">↘</span>
+          </button>
         </div>
-
       </section>
 
-      <div className="section-heading">
+      <div className="section-heading" id="directions">
         <div>
           <span>01</span>
           <h2>Направления</h2>
         </div>
-        <p>Выберите страну</p>
+        <p>Куда отправимся?</p>
       </div>
 
       <div className="routes-list">
-
         <RouteCard
           title="Лаос"
           route="Нячанг — Лаос"
-          description="Штамп 45 дней или виза на 90 дней"
+          description="Штамп на 45 дней или виза на 90 дней"
           accent="laos"
           onClick={() => onRoute(ROUTES.LAOS)}
         />
-
         <RouteCard
           title="Камбоджа"
           route="Нячанг — Камбоджа"
-          description="Штамп 45 дней или виза на 90 дней"
+          description="Штамп на 45 дней или виза на 90 дней"
           accent="cambodia"
           onClick={() => onRoute(ROUTES.CAMBODIA)}
         />
-
         <RouteCard
           title="Лаос"
           route="Дананг — Лаос"
-          description="Штамп 45 дней или виза на 90 дней"
+          description="Штамп на 45 дней или виза на 90 дней"
           accent="laos"
           onClick={() => onRoute(ROUTES.DANANG_LAOS)}
         />
-
       </div>
+
+      <section className="home-info-section">
+        <div className="home-section-kicker">02 · ВЫГОДА В ДЕТАЛЯХ</div>
+        <h2>В поездке важен не только штамп</h2>
+        <p className="home-section-intro">
+          Мы стараемся сделать дорогу комфортнее, а расходы — понятнее.
+          Без ненужных дополнений к стоимости.
+        </p>
+
+        <div className="home-benefit-list">
+          <div className="home-benefit">
+            <span className="home-benefit-icon">₫</span>
+            <div>
+              <h3>Разумная цена</h3>
+              <p>Продумываем стоимость так, чтобы вы не переплачивали за лишнее.</p>
+            </div>
+          </div>
+          <div className="home-benefit">
+            <span className="home-benefit-icon">☕</span>
+            <div>
+              <h3>Небольшие бонусы в дороге</h3>
+              <p>
+                Напиток на выбор: Coca-Cola, Fanta или Sprite, снеки,
+                вода 1 л и таблетки от укачивания на извилистом маршруте.
+              </p>
+            </div>
+          </div>
+          <div className="home-benefit">
+            <span className="home-benefit-icon">↗</span>
+            <div>
+              <h3>Всё по делу</h3>
+              <p>Помогаем разобраться с поездкой и заранее понять основные шаги.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="home-story-section">
+        <div className="home-section-kicker">03 · НАША ИСТОРИЯ</div>
+        <h2>Мы только начинаем — и не скрываем этого</h2>
+        <p>
+          Vizaran запустился в октябре 2026 года. Мы новая компания,
+          которая организует визараны из Нячанга и Дананга.
+        </p>
+        <p>
+          Наша цель — помогать людям планировать поездки и экономить
+          на оформлении штампов без лишней путаницы.
+        </p>
+        <p>
+          У основателей есть опыт учёбы в Universal Arts School в Испании
+          по направлению кинорежиссуры. Мы не выдаём это за многолетний
+          опыт визового сервиса — вместо этого делаем ставку на открытость,
+          понятные условия и внимание к пассажирам.
+        </p>
+        <div className="home-honesty-note">
+          <span aria-hidden="true">✓</span>
+          <p>Новая компания — честно обозначенные условия и возможность связаться с нами.</p>
+        </div>
+      </section>
+
+      <section className="home-support-section">
+        <div className="home-section-kicker">04 · МЫ НА СВЯЗИ</div>
+        <h2>Вы не остаётесь один на один с вопросами</h2>
+        <p>
+          Не уверены, что взять с собой? Возник вопрос перед выездом
+          или по дороге? Напишите нам — постараемся помочь и подсказать,
+          что делать дальше.
+        </p>
+        <div className="home-support-note">
+          <span aria-hidden="true">✦</span>
+          <div>
+            <strong>Можно просто написать</strong>
+            <p>Без необходимости разбираться во всём самостоятельно.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="home-loyalty-section">
+        <div className="home-section-kicker">05 · ДЛЯ НАШИХ ПАССАЖИРОВ</div>
+        <h2>В следующий раз — выгоднее</h2>
+        <p>
+          После первой поездки получите скидку 50 000 ₫ на следующий визаран.
+          При сохранении текущей базовой цены 500 000 ₫ повторная поездка
+          обойдётся в 450 000 ₫.
+        </p>
+        <div className="home-price-comparison">
+          <div>
+            <span>Обычная цена</span>
+            <strong className="home-old-price">500 000 ₫</strong>
+          </div>
+          <div>
+            <span>Для повторной поездки</span>
+            <strong className="home-new-price">450 000 ₫</strong>
+          </div>
+        </div>
+        <p className="home-loyalty-footnote">
+          Условия скидки подтвердим при бронировании. Дополнительные услуги
+          и бонусы сохраняются, если они предусмотрены выбранным маршрутом.
+        </p>
+      </section>
+
+      <section className="home-faq-section">
+        <div className="home-section-kicker">06 · FAQ</div>
+        <h2>Частые вопросы</h2>
+
+        <details className="home-faq-item">
+          <summary>Сколько стоит поездка?</summary>
+          <p>
+            Штамп на 45 дней стоит 500 000 ₫. Виза и штамп на 90 дней —
+            900 000 ₫. Выберите направление, чтобы перейти к доступным вариантам.
+          </p>
+        </details>
+
+        <details className="home-faq-item">
+          <summary>Что входит в поездку?</summary>
+          <p>
+            Состав поездки и доступные бонусы зависят от выбранного направления.
+            Перед подтверждением бронирования проверьте условия на экране услуги.
+          </p>
+        </details>
+
+        <details className="home-faq-item">
+          <summary>Что делать, если я плохо переношу серпантин?</summary>
+          <p>
+            Маршрут может проходить по извилистым дорогам. Если вас укачивает,
+            подготовьтесь заранее и сообщите нам о своих вопросах до поездки.
+          </p>
+        </details>
+
+        <details className="home-faq-item">
+          <summary>Можно ли написать вам во время поездки?</summary>
+          <p>
+            Да, вы можете связаться с нами, если появятся вопросы или понадобится
+            помощь с организационными моментами.
+          </p>
+        </details>
+
+        <details className="home-faq-item">
+          <summary>Есть ли скидка для постоянных клиентов?</summary>
+          <p>
+            После первой поездки предусмотрена скидка 50 000 ₫ на следующую.
+            Условия повторного бронирования уточним при оформлении.
+          </p>
+        </details>
+
+        <details className="home-faq-item">
+          <summary>Как забронировать поездку?</summary>
+          <p>
+            Нажмите на нужное направление, выберите услугу и следуйте шагам
+            оформления в приложении.
+          </p>
+        </details>
+      </section>
+
+      <section className="home-final-cta">
+        <span className="home-section-kicker">ВАША СЛЕДУЮЩАЯ ПОЕЗДКА</span>
+        <h2>Готовы выбрать направление?</h2>
+        <p>Посмотрите варианты поездок и подберите подходящий для себя.</p>
+        <button className="home-primary-button" onClick={scrollToDirections}>
+          Забронировать
+          <span aria-hidden="true">↗</span>
+        </button>
+      </section>
 
     </div>
   );
