@@ -6173,3 +6173,44 @@ body:has(.vizaran-seat-page) .content {
   transform: none;
 }
 
+
+/* Финальное выравнивание способов оплаты */
+.payment-methods .payment-method.disabled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 12px;
+  text-align: center;
+}
+
+/* Visa и Mastercard: одинаковая база, Visa на 20% меньше */
+.payment-methods .payment-method-logo[src*="visa-logo"],
+.payment-methods .payment-method-logo[src*="mastercard-logo"] {
+  width: 90px;
+  height: 28px;
+  max-width: 90px;
+  object-fit: contain;
+  transform: none;
+}
+
+.payment-methods .payment-method-logo[src*="visa-logo"] {
+  transform: scale(0.8);
+}
+
+/* Статус не растягивает карточку */
+.payment-methods .payment-method.disabled small {
+  flex: 0 0 auto;
+  margin: 0;
+  line-height: 1;
+}
+
+/* СБП: контрастная светлая подложка для читаемости логотипа */
+.payment-methods .payment-method-logo-sbp {
+  background: #fff;
+  border: 1px solid rgba(255,255,255,.8);
+  border-radius: 8px;
+  padding: 5px 9px;
+  box-sizing: content-box;
+}
+
