@@ -6308,3 +6308,14 @@ body:has(.vizaran-seat-page) .content {
   gap: 1.5px !important;
 }
 
+
+/* FINAL: визуально сближаем Visa и Mastercard */
+.payment-methods .payment-method.disabled:has(img[src*="visa-logo"]) {
+  gap: 0 !important;
+  column-gap: 0 !important;
+}
+
+.payment-methods .payment-method.disabled img[src*="visa-logo"] {
+  margin-right: -1.5px !important;
+}
+
