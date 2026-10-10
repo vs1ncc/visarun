@@ -5948,18 +5948,10 @@ body:has(.vizaran-seat-page) .content {
   }
 }
 
-/* Move only the bus down by 20px */
+/* Move only lower seat details and continue panel down 20px */
 @media (max-width: 700px) {
-  .vizaran-seat-page .vizaran-bus {
-    transform: translateY(20px) !important;
-  }
-}
-
-
-/* Move blocks below the bus down 20px; keep header and bus unchanged */
-@media (max-width: 700px) {
-  .vizaran-seat-page .vizaran-seat-content,
-  .vizaran-seat-page .vizaran-seat-bottom {
+  .vizaran-seat-sidebar,
+  .vizaran-seat-page > .vizaran-seat-bottom {
     position: relative !important;
     top: 20px !important;
   }
