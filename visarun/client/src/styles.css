@@ -6245,3 +6245,19 @@ body:has(.vizaran-seat-page) .content {
 .payment-methods .payment-method.disabled:has(img[src*="visa-logo"]) small {
   margin-left: 10px !important;
 }
+
+/* FIX: вертикально центрируем статус «Скоро» в карточках оплаты */
+.payment-methods .payment-method.disabled > small {
+  display: inline-flex !important;
+  align-items: center !important;
+  align-self: center !important;
+  justify-content: center !important;
+  line-height: 1.2 !important;
+  height: 28px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 0 !important;
+  vertical-align: middle !important;
+  position: relative !important;
+  top: 0 !important;
+}
