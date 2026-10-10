@@ -6723,3 +6723,57 @@ body:has(.vizaran-seat-page) .content {
 .home-primary-button {
   text-indent: -3px;
 }
+
+/* Center CTA label in the space before the arrow */
+.home-primary-button {
+  text-indent: 0;
+}
+
+.home-primary-button .home-button-arrow {
+  right: 18px;
+}
+
+.home-primary-button {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.home-primary-button:not(:has(.home-button-arrow)) {
+  justify-content: center;
+}
+
+.home-primary-button:has(.home-button-arrow) {
+  justify-content: flex-start;
+}
+
+.home-primary-button:has(.home-button-arrow)::before {
+  content: "";
+  flex: 1;
+}
+
+.home-primary-button:has(.home-button-arrow) .home-button-arrow {
+  position: absolute;
+}
+
+.home-primary-button:has(.home-button-arrow) {
+  text-align: center;
+}
+
+.home-primary-button:has(.home-button-arrow) {
+  display: grid;
+  grid-template-columns: 1fr 36px;
+  column-gap: 18px;
+}
+
+.home-primary-button:has(.home-button-arrow) .home-button-arrow {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.home-primary-button:has(.home-button-arrow) {
+  justify-items: center;
+}
+
+.home-primary-button:has(.home-button-arrow) {
+  grid-template-columns: minmax(0, 1fr) 36px;
+}
