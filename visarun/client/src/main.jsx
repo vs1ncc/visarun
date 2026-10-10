@@ -1448,33 +1448,43 @@ function Payment({
       <div className="payment-methods">
 
         <div className="payment-method active">
-          <div>
-            <strong>
-              СБП / карта РФ
-            </strong>
-
-            <span>
-              Доступно
-            </span>
-          </div>
-
-          <span>
-            ✓
-          </span>
+          <img
+            className="payment-method-logo payment-method-logo-sbp"
+            src="/images/payments/sbp-logo.png.webp"
+            alt="СБП"
+          />
+          <span className="payment-method-status">Доступно</span>
         </div>
 
         <div className="payment-method disabled">
-          Visa / Mastercard
+          <img
+            className="payment-method-logo"
+            src="/images/payments/visa-logo.png.webp"
+            alt="Visa"
+          />
+          <img
+            className="payment-method-logo"
+            src="/images/payments/mastercard-logo.png.png"
+            alt="Mastercard"
+          />
           <small>Скоро</small>
         </div>
 
         <div className="payment-method disabled">
-          VietQR
+          <img
+            className="payment-method-logo payment-method-logo-vietqr"
+            src="/images/payments/vietqr-logo.png.png"
+            alt="VietQR"
+          />
           <small>Скоро</small>
         </div>
 
         <div className="payment-method disabled">
-          Crypto
+          <img
+            className="payment-method-logo payment-method-logo-crypto"
+            src="/images/payments/crypto-logo.png.webp"
+            alt="Crypto"
+          />
           <small>Скоро</small>
         </div>
 

@@ -6105,3 +6105,60 @@ body:has(.vizaran-seat-page) .content {
     align-items: flex-start;
   }
 }
+
+
+/* Компактные логотипы способов оплаты */
+.payment-methods .payment-method {
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.payment-methods .payment-method-logo {
+  display: block;
+  width: auto;
+  height: 28px;
+  max-width: min(112px, 42%);
+  object-fit: contain;
+  flex: 0 1 auto;
+}
+
+.payment-methods .payment-method-logo-sbp {
+  max-width: 145px;
+  height: 30px;
+}
+
+.payment-methods .payment-method-logo-vietqr {
+  max-width: 150px;
+}
+
+.payment-methods .payment-method-logo-crypto {
+  max-width: 100px;
+}
+
+.payment-methods .payment-method-status,
+.payment-methods .payment-method small {
+  flex: 0 0 auto;
+  font-size: 12px;
+}
+
+@media (max-width: 380px) {
+  .payment-methods .payment-method {
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .payment-methods .payment-method-logo {
+    height: 24px;
+    max-width: 40%;
+  }
+
+  .payment-methods .payment-method-logo-sbp {
+    height: 26px;
+  }
+}
