@@ -6664,3 +6664,16 @@ body:has(.vizaran-seat-page) .content {
   letter-spacing: 0.18px;
   line-height: 1.8 !important;
 }
+
+/* Home CTA: match the lighter homepage typography */
+.home-primary-button {
+  font-weight: 400;
+  letter-spacing: 0.18px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.home-primary-button span {
+  font-weight: 300;
+}
