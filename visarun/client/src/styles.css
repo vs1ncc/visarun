@@ -6283,3 +6283,9 @@ body:has(.vizaran-seat-page) .content {
   transform: scale(0.8) !important;
 }
 
+
+/* Mastercard увеличиваем до размера Visa */
+.payment-methods .payment-method-logo[src*="mastercard-logo"] {
+  transform: scale(1.25) !important;
+}
+
