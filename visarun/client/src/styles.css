@@ -5954,3 +5954,13 @@ body:has(.vizaran-seat-page) .content {
     transform: translateY(20px) !important;
   }
 }
+
+
+/* Move blocks below the bus down 20px; keep header and bus unchanged */
+@media (max-width: 700px) {
+  .vizaran-seat-page .vizaran-seat-content,
+  .vizaran-seat-page .vizaran-seat-bottom {
+    position: relative !important;
+    top: 20px !important;
+  }
+}
