@@ -538,7 +538,11 @@ function Home({ onRoute, user }) {
           </p>
           <button className="home-primary-button" onClick={scrollToDirections}>
             Выбрать направление
-            <span aria-hidden="true">↘</span>
+            <span className="home-button-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v17M5 13l7 7 7-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
           </button>
         </div>
       </section>
