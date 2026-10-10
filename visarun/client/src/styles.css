@@ -6677,3 +6677,13 @@ body:has(.vizaran-seat-page) .content {
 .home-primary-button span {
   font-weight: 300;
 }
+
+/* Smaller one-line label for the homepage CTA */
+.home-primary-button {
+  font-size: 70%;
+  white-space: nowrap;
+}
+
+.home-primary-button span {
+  flex-shrink: 0;
+}
