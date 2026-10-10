@@ -6289,3 +6289,9 @@ body:has(.vizaran-seat-page) .content {
   transform: scale(1.25) !important;
 }
 
+
+/* Ровно 3px между Visa и Mastercard */
+.payment-methods .payment-method:has(img[src*="visa-logo"]) {
+  gap: 3px !important;
+}
+
