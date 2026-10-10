@@ -738,7 +738,11 @@ function Home({ onRoute, user }) {
         <p>Посмотрите варианты поездок и подберите подходящий для себя.</p>
         <button className="home-primary-button" onClick={scrollToDirections}>
           Забронировать
-          <span aria-hidden="true">↗</span>
+          <span className="home-button-arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 21V4M5 11l7-7 7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
         </button>
       </section>
 
