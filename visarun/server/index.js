@@ -386,6 +386,7 @@ app.post("/api/orders/draft", async (req, res) => {
 
     orders.push(order);
     await writeJson(ORDERS_FILE, orders);
+    await notifyAdmin(order, "draft_created");
 
     return res.json({ success: true, order });
   } catch (error) {
@@ -533,6 +534,7 @@ app.post("/api/orders", async (req, res) => {
     });
 
     await writeJson(ORDERS_FILE, orders);
+    await notifyAdmin(order, "awaiting_payment");
 
     return res.json({ success: true, order });
   } catch (error) {
@@ -590,7 +592,8 @@ app.post(
 
     await writeJson(ORDERS_FILE, orders);
 
-    await notifyAdmin(order);
+    await notifyAdmin(order, "payment_check");
+    await notifyClient(order, `🧾 Чек получен и передан на проверку.\n\nЗаказ: ${order.id}\nМаршрут: ${order.route || "—"}\n\nМы сообщим результат проверки здесь.`);
 
     res.json({
       success: true,
@@ -696,51 +699,67 @@ ${process.env.PAYMENT_PHONE}
    ADMIN NOTIFICATION
 ========================= */
 
-async function notifyAdmin(order) {
+async function notifyAdmin(order, event = "payment_check") {
   if (!bot || !process.env.ADMIN_CHAT_ID) {
-    return;
+    console.warn("Admin Telegram notification skipped: bot or ADMIN_CHAT_ID missing");
+    return false;
   }
 
-  const username = order.username
-    ? `@${order.username}`
-    : "без username";
+  const labels = {
+    draft_created: "🆕 СОЗДАН ЧЕРНОВИК БРОНИ",
+    awaiting_payment: "💳 БРОНЬ ПЕРЕШЛА К ОПЛАТЕ",
+    payment_check: "🧾 ПОЛУЧЕН ЧЕК — НУЖНА ПРОВЕРКА",
+    confirmed: "✅ БРОНЬ ПОДТВЕРЖДЕНА"
+  };
 
-  const message = `
-🔔 НОВОЕ БРОНИРОВАНИЕ
+  const username = order.username ? `@${order.username}` : "без username";
+  const passport = order.passport || {};
+  const priceRub = order.priceRub ?? "—";
+  const priceVnd = Number(order.priceVnd);
+  const priceVndText = Number.isFinite(priceVnd)
+    ? priceVnd.toLocaleString("ru-RU")
+    : "—";
 
-Заказ: ${order.id}
-
-👤 Telegram: ${username}
-Имя: ${order.firstName || "—"}
-📞 Телефон: ${order.phone || "—"}
-
-🚌 Маршрут: ${order.route}
-🎫 Услуга: ${order.service}
-💺 Место: ${order.seat}
-
-💰 Сумма:
-${order.priceRub} ₽
-${order.priceVnd.toLocaleString("ru-RU")} ₫
-
-📄 Паспорт:
-${order.passport.fullName}
-${order.passport.birthDate}
-${order.passport.passportNumber}
-
-⏳ Статус:
-Ожидается проверка оплаты.
-`;
+  const message = [
+    labels[event] || "🔔 ОБНОВЛЕНИЕ БРОНИРОВАНИЯ",
+    "",
+    `Заказ: ${order.id || "—"}`,
+    `👤 Telegram: ${username}`,
+    `Имя: ${order.firstName || "—"}`,
+    `📞 Телефон: ${order.phone || "—"}`,
+    `🚌 Маршрут: ${order.route || "—"}`,
+    `🎫 Услуга: ${order.service || "—"}`,
+    `💺 Место: ${order.seat || "—"}`,
+    `💰 Сумма: ${priceRub} ₽ / ${priceVndText} ₫`,
+    `📄 Паспорт: ${passport.fullName || "не заполнен"}`,
+    `Дата рождения: ${passport.birthDate || "—"}`,
+    `Номер паспорта: ${passport.passportNumber || "—"}`,
+    `Статус: ${order.status || "—"}`
+  ].join("\n");
 
   try {
-    await bot.telegram.sendMessage(
-      process.env.ADMIN_CHAT_ID,
-      message
-    );
+    await bot.telegram.sendMessage(process.env.ADMIN_CHAT_ID, message);
+    console.log("Admin Telegram notification sent:", event, order.id);
+    return true;
   } catch (error) {
-    console.error(
-      "Telegram admin notification error:",
-      error.message
-    );
+    console.error("Telegram admin notification error:", error.message);
+    return false;
+  }
+}
+
+async function notifyClient(order, message) {
+  if (!bot || !order.telegramId) {
+    console.warn("Client Telegram notification skipped: bot or telegramId missing");
+    return false;
+  }
+
+  try {
+    await bot.telegram.sendMessage(String(order.telegramId), message);
+    console.log("Client Telegram notification sent:", order.id);
+    return true;
+  } catch (error) {
+    console.error("Telegram client notification error:", error.message);
+    return false;
   }
 }
 
@@ -765,6 +784,7 @@ app.post("/api/orders/:id/confirm", async (req, res) => {
   order.confirmedAt = new Date().toISOString();
 
   await writeJson(ORDERS_FILE, orders);
+  await notifyAdmin(order, "confirmed");
 
   if (bot) {
     try {
