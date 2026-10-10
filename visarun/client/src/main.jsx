@@ -1480,7 +1480,6 @@ function Payment({
         </div>
 
         <div className="payment-method disabled">
-          <div className="payment-method disabled">
           <img
             className="payment-method-logo payment-method-logo-google-pay"
             src="/images/payments/google-pay-logo.png"
@@ -1507,14 +1506,14 @@ function Payment({
           <small>Скоро</small>
         </div>
 
-        <img
+        <div className="payment-method disabled">
+          <img
             className="payment-method-logo payment-method-logo-crypto"
             src="/images/payments/crypto-logo.png.webp"
             alt="Crypto"
           />
           <small>Скоро</small>
         </div>
-
       </div>
 
       <div className="bank-card">
