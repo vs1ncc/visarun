@@ -1482,7 +1482,7 @@ function Payment({
         <div className="payment-method disabled">
           <img
             className="payment-method-logo payment-method-logo-google-pay"
-            src="/images/payments/google-pay-logo.png"
+            src="/images/payments/google-pay-logo.png.webp"
             alt="Google Pay"
           />
           <small>Скоро</small>
@@ -1491,7 +1491,7 @@ function Payment({
         <div className="payment-method disabled">
           <img
             className="payment-method-logo payment-method-logo-apple-pay"
-            src="/images/payments/apple-pay-logo.png"
+            src="/images/payments/apple-pay-logo.png.png"
             alt="Apple Pay"
           />
           <small>Скоро</small>
@@ -1500,7 +1500,7 @@ function Payment({
         <div className="payment-method disabled">
           <img
             className="payment-method-logo payment-method-logo-paypal"
-            src="/images/payments/paypal-logo.png"
+            src="/images/payments/paypal-logo.png.png"
             alt="PayPal"
           />
           <small>Скоро</small>
