@@ -5836,3 +5836,18 @@ body:has(.vizaran-seat-page) .content {
     margin-top: -8px !important;
   }
 }
+
+/* ALIGN PASSENGER HEADER WITH SEAT PAGE */
+@media (max-width: 700px) {
+  .passport-page {
+    padding-top: 6px !important;
+  }
+
+  .passport-page > .back-button {
+    margin-top: -6px !important;
+  }
+
+  .passport-page > h1 {
+    margin-top: 14px !important;
+  }
+}
