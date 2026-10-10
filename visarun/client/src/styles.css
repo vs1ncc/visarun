@@ -5737,3 +5737,34 @@ body:has(.passport-page) .passport-page .primary-button {
     margin: 22px auto 30px !important;
   }
 }
+
+/* FIX — restore custom back arrow on all pages */
+.back-button .back-arrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  flex: 0 0 20px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: #ffffff !important;
+  line-height: 0 !important;
+}
+
+.back-button .back-arrow svg {
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  overflow: visible !important;
+}
+
+.back-button .back-arrow svg path {
+  stroke: currentColor !important;
+  stroke-width: 1.8 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  opacity: 1 !important;
+}
