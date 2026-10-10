@@ -6239,7 +6239,7 @@ body:has(.vizaran-seat-page) .content {
 }
 
 .payment-methods .payment-method.disabled:has(img[src*="visa-logo"]) img[src*="visa-logo"] {
-  margin-right: 1px !important;
+  margin-right: -1px !important;
 }
 
 .payment-methods .payment-method.disabled:has(img[src*="visa-logo"]) small {
