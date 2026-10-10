@@ -5948,12 +5948,9 @@ body:has(.vizaran-seat-page) .content {
   }
 }
 
-/* Move seat map and all seat-page content down by 20px */
+/* Move only the bus down by 20px */
 @media (max-width: 700px) {
-  .vizaran-seat-top,
-  .vizaran-seat-content,
-  .vizaran-seat-bottom {
-    position: relative !important;
-    top: 20px !important;
+  .vizaran-seat-page .vizaran-bus {
+    transform: translateY(20px) !important;
   }
 }
