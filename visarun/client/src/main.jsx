@@ -1598,9 +1598,7 @@ function OptionsSelection({
   return (
     <div className="vizaran-options-page">
       <header className="vizaran-options-header">
-        <button type="button" className="vizaran-options-back" onClick={onBack}>
-          ← Назад
-        </button>
+        <BackButton onClick={onBack} />
         <span className="vizaran-options-eyebrow">ВАША ПОЕЗДКА</span>
         <h1>Опции</h1>
         <p>Выберите дополнительные удобства в дорогу</p>
