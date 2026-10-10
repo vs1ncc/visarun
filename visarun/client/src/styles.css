@@ -5947,3 +5947,13 @@ body:has(.vizaran-seat-page) .content {
     transform: none !important;
   }
 }
+
+/* Move seat map and all seat-page content down by 20px */
+@media (max-width: 700px) {
+  .vizaran-seat-top,
+  .vizaran-seat-content,
+  .vizaran-seat-bottom {
+    position: relative !important;
+    top: 20px !important;
+  }
+}
