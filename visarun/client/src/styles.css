@@ -6719,3 +6719,7 @@ body:has(.vizaran-seat-page) .content {
   top: 50%;
   transform: translateY(-50%);
 }
+
+.home-primary-button {
+  text-indent: -3px;
+}
