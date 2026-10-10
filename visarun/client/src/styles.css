@@ -6214,3 +6214,18 @@ body:has(.vizaran-seat-page) .content {
   box-sizing: content-box;
 }
 
+
+/* Visa и Mastercard: одинаковый размер и интервал 3px */
+.payment-methods .payment-method-logo[src*="visa-logo"],
+.payment-methods .payment-method-logo[src*="mastercard-logo"] {
+  width: 90px;
+  height: 28px;
+  max-width: 90px;
+  object-fit: contain;
+  transform: none;
+}
+
+.payment-methods .payment-method.disabled:has(img[src*="visa-logo"]) {
+  gap: 3px;
+}
+
