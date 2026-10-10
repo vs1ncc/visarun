@@ -6706,3 +6706,16 @@ body:has(.vizaran-seat-page) .content {
   width: 21px;
   height: 21px;
 }
+
+/* Center CTA label while keeping the arrow fixed on the right */
+.home-primary-button {
+  position: relative;
+  justify-content: center;
+}
+
+.home-primary-button .home-button-arrow {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+}
