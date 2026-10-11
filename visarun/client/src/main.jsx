@@ -1487,6 +1487,7 @@ function PermissionSelection({
         <BackButton onClick={onBack} />
         <h1>Виза/Штамп</h1>
       </div>
+      <div className="passport-page-content">
       <p className="subtitle">Укажите данные разрешения на пребывание во Вьетнаме</p>
 
       <section className="passenger-block">
@@ -1537,6 +1538,7 @@ function PermissionSelection({
       >
         <span>ПРОДОЛЖИТЬ</span>
       </button>
+      </div>
     </div>
   );
 }

@@ -4755,9 +4755,8 @@ html:has(.seat-selection-page) {
   padding-top: 4px;
 }
 
-.passport-page .passenger-block:first-child {
+.passport-page-content {
   transform: translateY(-20px);
-  margin-bottom: -20px;
 }
 
 .passenger-block:last-child {
