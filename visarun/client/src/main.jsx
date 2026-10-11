@@ -564,7 +564,19 @@ function App() {
         })
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get("content-type") || "";
+      const rawResponse = await response.text();
+
+      if (!contentType.includes("application/json")) {
+        console.error("DRAFT RESPONSE IS NOT JSON:", {
+          status: response.status,
+          contentType,
+          bodyStart: rawResponse.slice(0, 300)
+        });
+        throw new Error(`Сервер вернул не JSON (HTTP ${response.status}). Откройте консоль браузера.`);
+      }
+
+      const data = JSON.parse(rawResponse);
       if (!response.ok || !data.success) {
         throw new Error(data.error || "Не удалось сохранить черновик");
       }
