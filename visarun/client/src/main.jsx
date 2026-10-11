@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { Lottie } from "lottie-react";
 import "./styles.css";
 
 const tg = window.Telegram?.WebApp;
@@ -62,7 +63,48 @@ const SERVICES = {
 };
 
 function App() {
-  const [screen, setScreen] = useState("home");
+  const [screen, setScreenRaw] = useState("home");
+  const [screenLoading, setScreenLoading] = useState(false);
+  const [loaderAnimation, setLoaderAnimation] = useState(null);
+  const screenTimerRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/animations/loader.json")
+      .then((response) => {
+        if (!response.ok) throw new Error("Не удалось загрузить анимацию");
+        return response.json();
+      })
+      .then((data) => {
+        if (active) setLoaderAnimation(data);
+      })
+      .catch((error) => console.error("LOTTIE LOAD ERROR:", error));
+
+    return () => {
+      active = false;
+      if (screenTimerRef.current) clearTimeout(screenTimerRef.current);
+    };
+  }, []);
+
+  function setScreen(nextScreen, animate = false) {
+    if (screenTimerRef.current) {
+      clearTimeout(screenTimerRef.current);
+      screenTimerRef.current = null;
+    }
+
+    if (!animate) {
+      setScreenLoading(false);
+      setScreenRaw(nextScreen);
+      return;
+    }
+
+    setScreenLoading(true);
+    screenTimerRef.current = setTimeout(() => {
+      setScreenRaw(nextScreen);
+      setScreenLoading(false);
+      screenTimerRef.current = null;
+    }, 2500);
+  }
   const [adminOrders, setAdminOrders] = useState([]);
   const [adminError, setAdminError] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
@@ -486,7 +528,7 @@ function App() {
   function openRoute(routeName) {
     setRoute(routeName);
     setSelectedDate(null);
-    setScreen("service");
+    setScreen("service", true);
   }
 
   async function openService(serviceType) {
@@ -534,7 +576,7 @@ function App() {
       setVietnamEntryDate(data.order.vietnamEntryDate || "");
       setPermissionValidUntil(data.order.permissionValidUntil || "");
       await loadOrders(user.telegramId);
-      setScreen("permission");
+      setScreen("permission", true);
     } catch (error) {
       alert(error.message || "Не удалось начать бронирование");
     } finally {
@@ -543,11 +585,11 @@ function App() {
   }
 
   function openPrivacy() {
-    setScreen("privacy");
+    setScreen("privacy", true);
   }
 
   function openTerms() {
-    setScreen("terms");
+    setScreen("terms", true);
   }
 
   async function savePassportAndContinue() {
@@ -620,7 +662,7 @@ function App() {
         );
       }
 
-      setScreen("calendar");
+      setScreen("calendar", true);
 
     } catch (error) {
       alert(error.message || "Не удалось сохранить данные");
@@ -742,7 +784,7 @@ function App() {
 
       await loadOrders(user.telegramId);
 
-      setScreen("success");
+      setScreen("success", true);
     } catch (error) {
       alert(error.message);
     } finally {
@@ -787,7 +829,7 @@ function App() {
                 travelDate: selectedDate,
                 currentStep: "seats"
               });
-              if (saved) setScreen("seats");
+              if (saved) setScreen("seats", true);
             }}
           />
         )}
@@ -807,7 +849,7 @@ function App() {
                 permissionValidUntil: permissionValidUntil || null,
                 currentStep: "passport"
               });
-              if (saved) setScreen("passport");
+              if (saved) setScreen("passport", true);
             }}
           />
         )}
@@ -845,7 +887,7 @@ function App() {
                 seat: selectedSeat,
                 currentStep: "options"
               });
-              if (saved) setScreen("options");
+              if (saved) setScreen("options", true);
             }}
             loading={loading}
           />
@@ -958,6 +1000,19 @@ function App() {
           screen={screen}
           setScreen={setScreen}
         />
+      )}
+
+      {screenLoading && (
+        <div className="lottie-transition-overlay" role="status" aria-label="Загрузка">
+          {loaderAnimation && (
+            <Lottie
+              animationData={loaderAnimation}
+              loop
+              autoplay
+              className="lottie-transition-animation"
+            />
+          )}
+        </div>
       )}
 
     </div>
