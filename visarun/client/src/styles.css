@@ -7789,7 +7789,7 @@ body:has(.vizaran-options-page) .app {
 }
 
 /* VISA/STAMP — move permission section and continue button up by 20px */
-.passport-page > .passenger-block,
-.passport-page > .vizaran-calendar-submit {
+.passport-page-content > .passenger-block,
+.passport-page-content > .vizaran-calendar-submit {
   transform: translateY(-20px);
 }
