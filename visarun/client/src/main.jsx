@@ -10,6 +10,27 @@ if (tg) {
 }
 
 const API = "/api";
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "";
+
+function loadTurnstileScript() {
+  return new Promise((resolve, reject) => {
+    if (window.turnstile) return resolve();
+    const existing = document.querySelector('script[data-turnstile="true"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Не удалось загрузить Cloudflare Turnstile")), { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.defer = true;
+    script.dataset.turnstile = "true";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Не удалось загрузить Cloudflare Turnstile"));
+    document.head.appendChild(script);
+  });
+}
 
 window.addEventListener("error", (event) => {
   console.error("VIZARAN RUNTIME ERROR:", event.error || event.message);
@@ -42,12 +63,50 @@ const SERVICES = {
 
 function App() {
   const [screen, setScreen] = useState("home");
+  const [adminOrders, setAdminOrders] = useState([]);
+  const [adminError, setAdminError] = useState("");
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [serviceSettings, setServiceSettings] = useState({ STAMP: true, VISA: true });
+
+  async function loadServiceSettings() {
+    try {
+      const response = await fetch(`${API}/service-settings`, { cache: "no-store" });
+      const data = await response.json();
+      if (response.ok && data.success && data.settings) {
+        const settings = {
+          STAMP: data.settings.STAMP !== false,
+          VISA: data.settings.VISA !== false
+        };
+        setServiceSettings(settings);
+        return settings;
+      }
+    } catch (error) {
+      console.error("SERVICE SETTINGS LOAD ERROR:", error);
+    }
+    return null;
+  }
+
+  useEffect(() => {
+    loadServiceSettings();
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [screen]);
 
   const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    function openAdmin() {
+      if (user?.username?.toLowerCase() === "yosoycastello") {
+        setScreen("admin");
+      }
+    }
+
+    window.addEventListener("vizaran:open-admin", openAdmin);
+    return () => window.removeEventListener("vizaran:open-admin", openAdmin);
+  }, [user]);
+
 
   const [route, setRoute] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -91,6 +150,7 @@ function App() {
   ]);
 
   const [consent, setConsent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   const [selectedSeat, setSelectedSeat] = useState(null);
   const [selectedDrink, setSelectedDrink] = useState("");
@@ -100,6 +160,7 @@ function App() {
 
 
   const [order, setOrder] = useState(null);
+  const [draftOrder, setDraftOrder] = useState(null);
 
   const [orders, setOrders] = useState([]);
 
@@ -112,6 +173,62 @@ function App() {
   useEffect(() => {
     authenticate();
   }, []);
+
+  async function loadAdminOrders() {
+    setAdminLoading(true);
+    setAdminError("");
+
+    try {
+      if (!tg?.initData) {
+        throw new Error("Открой приложение через Telegram.");
+      }
+
+      const response = await fetch(`${API}/admin/orders`, {
+        headers: {
+          "x-telegram-init-data": tg.initData
+        }
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Нет доступа к админ-панели.");
+      }
+
+      setAdminOrders(data.orders || []);
+    } catch (error) {
+      setAdminError(error.message || "Не удалось загрузить заказы.");
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  async function reviewReceipt(orderId, action) {
+    const reason = action === "reject"
+      ? window.prompt("Причина отклонения чека:", "Не удалось подтвердить оплату")
+      : "";
+
+    if (action === "reject" && reason === null) return;
+
+    try {
+      const response = await fetch(`${API}/orders/${encodeURIComponent(orderId)}/${action}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-telegram-init-data": tg?.initData || ""
+        },
+        body: JSON.stringify({ reason })
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Не удалось обработать заказ.");
+      }
+
+      await loadAdminOrders();
+    } catch (error) {
+      window.alert(error.message || "Ошибка обработки заказа.");
+    }
+  }
 
   async function authenticate() {
     try {
@@ -170,35 +287,37 @@ function App() {
       }
 
       const telegramUser = tg?.initDataUnsafe?.user;
+      const telegramId = telegramUser?.id || data.user.telegramId;
+      const initData = tg?.initData || "";
+
+      const profileResponse = await fetch(
+        `/api/profile/${encodeURIComponent(telegramId)}`,
+        {
+          headers: {
+            "x-telegram-init-data": initData
+          }
+        }
+      );
+
+      const profileData = await profileResponse.json();
+
+      if (!profileResponse.ok || !profileData.success) {
+        throw new Error(
+          profileData.error || "Не удалось загрузить профиль"
+        );
+      }
+
+      const profile = profileData.user;
 
       const mergedUser = {
-        ...data.user,
-        telegramId:
-          telegramUser?.id ||
-          data.user.telegramId,
-
-        username:
-          telegramUser?.username ||
-          data.user.username ||
-          "",
-
-        firstName:
-          telegramUser?.first_name ||
-          data.user.firstName ||
-          "",
-
-        lastName:
-          telegramUser?.last_name ||
-          data.user.lastName ||
-          "",
-
-        photoUrl:
-          telegramUser?.photo_url ||
-          data.user.photoUrl ||
-          ""
+        telegramId,
+        username: telegramUser?.username || data.user.username || "",
+        firstName: telegramUser?.first_name || data.user.firstName || "",
+        lastName: telegramUser?.last_name || data.user.lastName || "",
+        photoUrl: telegramUser?.photo_url || data.user.photoUrl || "",
+        phone: profile.phone || "",
+        passport: profile.passport || null
       };
-
-      console.log("AUTH SUCCESS:", mergedUser);
 
       setUser(mergedUser);
       loadOrders(mergedUser.telegramId);
@@ -215,16 +334,153 @@ function App() {
 
   async function loadOrders(telegramId) {
     try {
+      const initData = window.Telegram?.WebApp?.initData;
+
+      if (!initData) {
+        throw new Error("Не удалось подтвердить пользователя Telegram");
+      }
+
       const response = await fetch(
-        `${API}/orders/user/${telegramId}`
+        `${API}/orders/user/${telegramId}`,
+        {
+          headers: {
+            "x-telegram-init-data": initData
+          }
+        }
       );
 
       const data = await response.json();
 
-      if (data.success) {
-        setOrders(data.orders);
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Не удалось загрузить бронирования");
       }
-    } catch {}
+
+      const userOrders = Array.isArray(data.orders) ? data.orders : [];
+      setOrders(userOrders);
+
+      const now = Date.now();
+
+      const resumableOrder = userOrders
+        .filter((item) => {
+          if (["payment_check", "confirmed", "cancelled", "canceled"].includes(item.status)) {
+            return false;
+          }
+
+          if (item.status === "awaiting_payment") {
+            return !item.paymentDeadline ||
+              new Date(item.paymentDeadline).getTime() > now;
+          }
+
+          return ["draft", "in_progress"].includes(item.status) &&
+            (!item.draftExpiresAt || Number(item.draftExpiresAt) > now);
+        })
+        .sort((a, b) =>
+          new Date(b.updatedAt || b.createdAt || 0) -
+          new Date(a.updatedAt || a.createdAt || 0)
+        )[0];
+
+      if (resumableOrder) {
+        setDraftOrder(resumableOrder);
+      }
+
+      return userOrders;
+    } catch (error) {
+      console.error("LOAD ORDERS ERROR:", error);
+      return [];
+    }
+  }
+
+  async function continueBooking(savedOrder) {
+    if (!savedOrder?.id) return;
+
+    setRoute(savedOrder.route || null);
+    setPermissionType(savedOrder.permissionType || "STAMP");
+    setVietnamEntryDate(savedOrder.vietnamEntryDate || "");
+    setPermissionValidUntil(savedOrder.permissionValidUntil || "");
+    setSelectedDate(savedOrder.travelDate || null);
+    setDraftOrder(savedOrder);
+
+    const matchedService = Object.values(SERVICES).find(
+      (item) => item.title === savedOrder.service
+    );
+    setService(matchedService || {
+      title: savedOrder.service,
+      priceRub: savedOrder.priceRub,
+      priceVnd: savedOrder.priceVnd
+    });
+
+    if (savedOrder.status === "awaiting_payment") {
+      const deadline = Number(savedOrder.paymentDeadline);
+      const remaining = deadline ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : 0;
+
+      if (remaining <= 0) {
+        alert("Время оплаты этого заказа истекло. Начните бронирование заново.");
+        return;
+      }
+
+      setOrder(savedOrder);
+      setTimeLeft(remaining);
+      setReceipt(null);
+      setScreen("payment");
+      return;
+    }
+
+    if (["draft", "in_progress"].includes(savedOrder.status)) {
+      if (savedOrder.draftExpiresAt && Number(savedOrder.draftExpiresAt) <= Date.now()) {
+        alert("Срок черновика истёк. Начните бронирование заново.");
+        return;
+      }
+
+      setSelectedSeat(savedOrder.seat || null);
+      setSelectedDrink(savedOrder.options?.drink || "");
+      setSelectedSnack(savedOrder.options?.snack || "");
+      setMotionSicknessTablets(Boolean(savedOrder.options?.motionSicknessTablets));
+      setMedicalWarningAccepted(Boolean(savedOrder.medicalWarningAccepted));
+
+      const stepScreens = {
+        permission: "permission",
+        passport: "passport",
+        calendar: "calendar",
+        seats: "seats",
+        options: "options"
+      };
+
+      setScreen(stepScreens[savedOrder.currentStep] || "permission");
+      return;
+    }
+
+    alert("Этот заказ нельзя продолжить.");
+  }
+
+  async function saveDraftProgress(fields) {
+    if (!user?.telegramId || !draftOrder?.id) return false;
+
+    try {
+      const response = await fetch(`${API}/orders/${draftOrder.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-telegram-init-data": window.Telegram?.WebApp?.initData || ""
+        },
+        body: JSON.stringify({
+          telegramId: user.telegramId,
+          ...fields
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Не удалось сохранить прогресс");
+      }
+
+      setDraftOrder(data.order);
+      return true;
+    } catch (error) {
+      console.error("SAVE DRAFT PROGRESS ERROR:", error);
+      alert(error.message || "Не удалось сохранить прогресс бронирования");
+      return false;
+    }
   }
 
   function openRoute(routeName) {
@@ -233,16 +489,57 @@ function App() {
     setScreen("service");
   }
 
-  function openService(serviceType) {
-    setService(SERVICES[serviceType]);
-    setSelectedDate(null);
+  async function openService(serviceType) {
+    if (!user?.telegramId || !route) {
+      alert("Не удалось определить пользователя или маршрут. Вернитесь и попробуйте ещё раз.");
+      return;
+    }
 
+    const selectedService = SERVICES[serviceType];
     const type = serviceType === "VISA" ? "VISA" : "STAMP";
-    setPermissionType(type);
-    setVietnamEntryDate("");
-    setPermissionValidUntil("");
 
-    setScreen("permission");
+    const latestSettings = await loadServiceSettings();
+    if (latestSettings && latestSettings[serviceType] === false) {
+      alert("Эта услуга временно недоступна. Выберите другую услугу.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API}/orders/draft`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-telegram-init-data": window.Telegram?.WebApp?.initData || ""
+        },
+        body: JSON.stringify({
+          telegramId: user.telegramId,
+          route,
+          service: selectedService.title,
+          permissionType: type,
+          priceRub: selectedService.priceRub,
+          priceVnd: selectedService.priceVnd
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Не удалось сохранить черновик");
+      }
+
+      setDraftOrder(data.order);
+      setService(selectedService);
+      setSelectedDate(null);
+      setPermissionType(type);
+      setVietnamEntryDate(data.order.vietnamEntryDate || "");
+      setPermissionValidUntil(data.order.permissionValidUntil || "");
+      await loadOrders(user.telegramId);
+      setScreen("permission");
+    } catch (error) {
+      alert(error.message || "Не удалось начать бронирование");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openPrivacy() {
@@ -280,6 +577,11 @@ function App() {
       return;
     }
 
+    if (!turnstileToken) {
+      alert("Пройдите проверку Cloudflare перед продолжением");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -288,12 +590,14 @@ function App() {
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "x-telegram-init-data": window.Telegram?.WebApp?.initData || ""
           },
           body: JSON.stringify({
             telegramId: user.telegramId,
             passengers,
-            consent: true
+            consent: true,
+            turnstileToken
           })
         }
       );
@@ -347,13 +651,19 @@ function App() {
     setLoading(true);
 
     try {
+      if (!draftOrder?.id) {
+        throw new Error("Черновик бронирования не найден. Начните бронирование заново.");
+      }
+
       const response = await fetch(`${API}/orders`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "x-telegram-init-data": window.Telegram?.WebApp?.initData || ""
         },
         body: JSON.stringify({
           telegramId: user.telegramId,
+          draftOrderId: draftOrder.id,
           travelDate: selectedDate,
           route,
           service: service.title,
@@ -408,6 +718,7 @@ function App() {
     const formData = new FormData();
 
     formData.append("receipt", receipt);
+    formData.append("telegramId", String(user.telegramId));
 
     setLoading(true);
 
@@ -416,6 +727,9 @@ function App() {
         `${API}/orders/${order.id}/receipt`,
         {
           method: "POST",
+          headers: {
+            "x-telegram-init-data": window.Telegram?.WebApp?.initData || ""
+          },
           body: formData
         }
       );
@@ -455,6 +769,7 @@ function App() {
         {screen === "service" && (
           <ServiceSelection
             route={route}
+            serviceSettings={serviceSettings}
             onBack={() => setScreen("home")}
             onSelect={openService}
           />
@@ -466,7 +781,14 @@ function App() {
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
             onBack={() => setScreen("service")}
-            onContinue={() => setScreen("seats")}
+            onContinue={async () => {
+              if (!selectedDate) return;
+              const saved = await saveDraftProgress({
+                travelDate: selectedDate,
+                currentStep: "seats"
+              });
+              if (saved) setScreen("seats");
+            }}
           />
         )}
 
@@ -478,7 +800,15 @@ function App() {
             onEntryDateChange={updateEntryDate}
             validUntil={permissionValidUntil}
             onBack={() => setScreen("service")}
-            onContinue={() => setScreen("passport")}
+            onContinue={async () => {
+              const saved = await saveDraftProgress({
+                permissionType,
+                vietnamEntryDate: vietnamEntryDate || null,
+                permissionValidUntil: permissionValidUntil || null,
+                currentStep: "passport"
+              });
+              if (saved) setScreen("passport");
+            }}
           />
         )}
 
@@ -488,6 +818,8 @@ function App() {
             setPassengers={setPassengers}
             consent={consent}
             setConsent={setConsent}
+            turnstileToken={turnstileToken}
+            setTurnstileToken={setTurnstileToken}
             onBack={() => setScreen("service")}
             onPrivacy={openPrivacy}
             onContinue={savePassportAndContinue}
@@ -499,10 +831,22 @@ function App() {
           <SeatSelection
             route={route}
             service={service}
+            selectedDate={selectedDate}
             selectedSeat={selectedSeat}
             setSelectedSeat={setSelectedSeat}
             onBack={() => setScreen("passport")}
-            onContinue={continueToOptions}
+            onContinue={async () => {
+              if (!selectedSeat) {
+                alert("Выберите место");
+                return;
+              }
+              const saved = await saveDraftProgress({
+                travelDate: selectedDate,
+                seat: selectedSeat,
+                currentStep: "options"
+              });
+              if (saved) setScreen("options");
+            }}
             loading={loading}
           />
         )}
@@ -519,7 +863,21 @@ function App() {
             setAccepted={setMedicalWarningAccepted}
             loading={loading}
             onBack={() => setScreen("seats")}
-            onContinue={createBooking}
+            onContinue={async () => {
+              const saved = await saveDraftProgress({
+                travelDate: selectedDate,
+                seat: selectedSeat,
+                options: {
+                  drink: selectedDrink || null,
+                  snack: selectedSnack || null,
+                  water: "Вода 1 литр",
+                  motionSicknessTablets
+                },
+                medicalWarningAccepted,
+                currentStep: "payment"
+              });
+              if (saved) await createBooking();
+            }}
           />
         )}
 
@@ -553,6 +911,7 @@ function App() {
         {screen === "bookings" && (
           <Bookings
             orders={orders}
+            onContinue={continueBooking}
           />
         )}
 
@@ -563,6 +922,18 @@ function App() {
             onTerms={openTerms}
           />
         )}
+        {screen === "admin" && (
+          <AdminPanel
+            user={user}
+            orders={adminOrders}
+            loading={adminLoading}
+            error={adminError}
+            onRefresh={loadAdminOrders}
+            onReview={reviewReceipt}
+            onBack={() => setScreen("profile")}
+          />
+        )}
+
 
         {screen === "privacy" && (
           <LegalPage
@@ -898,6 +1269,7 @@ function RouteCard({
 
 function ServiceSelection({
   route,
+  serviceSettings,
   onBack,
   onSelect
 }) {
@@ -919,6 +1291,7 @@ function ServiceSelection({
         title="Штамп на 45 дней"
         price="500 000 ₫"
         rub="1 600 ₽"
+        available={serviceSettings?.STAMP !== false}
         onClick={() => onSelect("STAMP")}
       />
 
@@ -926,6 +1299,7 @@ function ServiceSelection({
         title="Виза + штамп на 90 дней"
         price="900 000 ₫"
         rub="3 000 ₽"
+        available={serviceSettings?.VISA !== false}
         onClick={() => onSelect("VISA")}
       />
 
@@ -970,12 +1344,15 @@ function ServiceCard({
   title,
   price,
   rub,
+  available = true,
   onClick
 }) {
   return (
     <button
-      className="service-card"
-      onClick={onClick}
+      className={`service-card${available ? "" : " service-card-unavailable"}`}
+      onClick={available ? onClick : undefined}
+      disabled={!available}
+      aria-disabled={!available}
     >
 
       <div>
@@ -989,10 +1366,13 @@ function ServiceCard({
         <span className="price-rub">
           {rub}
         </span>
+        {!available && (
+          <span className="service-unavailable-label">Временно недоступно</span>
+        )}
 
       </div>
 
-      <span className="service-arrow" aria-hidden="true">
+      {available && <span className="service-arrow" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
           <path
             d="M5 12H19M13 6L19 12L13 18"
@@ -1002,7 +1382,7 @@ function ServiceCard({
             strokeLinejoin="round"
           />
         </svg>
-      </span>
+      </span>}
 
     </button>
   );
@@ -1087,11 +1467,68 @@ function PermissionSelection({
    PASSPORT
 ========================= */
 
+function TurnstileWidget({ siteKey, onToken }) {
+  const containerRef = React.useRef(null);
+  const [errorCode, setErrorCode] = useState("");
+
+  useEffect(() => {
+    let widgetId;
+    let cancelled = false;
+
+    setErrorCode("");
+
+    loadTurnstileScript()
+      .then(() => {
+        if (cancelled || !containerRef.current || !window.turnstile) return;
+
+        widgetId = window.turnstile.render(containerRef.current, {
+          sitekey: siteKey,
+          callback: (token) => {
+            setErrorCode("");
+            onToken(token);
+          },
+          "expired-callback": () => onToken(""),
+          "error-callback": (code) => {
+            const message = `Turnstile error: ${code || "unknown"}`;
+            console.error(message);
+            setErrorCode(message);
+            onToken("");
+          }
+        });
+      })
+      .catch((error) => {
+        console.error("TURNSTILE LOAD ERROR:", error);
+        setErrorCode(error?.message || "Не удалось загрузить скрипт Turnstile");
+        onToken("");
+      });
+
+    return () => {
+      cancelled = true;
+      if (widgetId !== undefined && window.turnstile) {
+        window.turnstile.remove(widgetId);
+      }
+    };
+  }, [siteKey, onToken]);
+
+  return (
+    <div>
+      <div ref={containerRef} aria-label="Проверка безопасности Cloudflare" />
+      {errorCode && (
+        <p role="alert" style={{ color: "#fca5a5", fontSize: 13, marginTop: 8 }}>
+          Не удалось пройти проверку безопасности. Попробуйте ещё раз.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Passport({
   passengers,
   setPassengers,
   consent,
   setConsent,
+  turnstileToken,
+  setTurnstileToken,
   onBack,
   onPrivacy,
   onContinue,
@@ -1280,6 +1717,17 @@ function Passport({
 
       <div className="passport-footer">
 
+        <div className="turnstile-wrap">
+          {TURNSTILE_SITE_KEY ? (
+            <TurnstileWidget
+              siteKey={TURNSTILE_SITE_KEY}
+              onToken={setTurnstileToken}
+            />
+          ) : (
+            <p className="turnstile-error">Проверка безопасности временно недоступна.</p>
+          )}
+        </div>
+
         <label className={`consent consent-card ${consent ? "is-checked" : ""}`}>
 
           <input
@@ -1344,43 +1792,78 @@ function CalendarSelection({
   onBack,
   onContinue
 }) {
-  const dates = [
-    { day: "01", available: false },
-    { day: "02", available: false },
-    { day: "03", available: false },
-    { day: "04", available: false },
-    { day: "05", available: false },
-    { day: "06", available: false },
-    { day: "07", available: false },
-    { day: "08", available: true },
-    { day: "09", available: true },
-    { day: "10", available: false },
-    { day: "11", available: true },
-    { day: "12", available: false },
-    { day: "13", available: true },
-    { day: "14", available: true },
-    { day: "15", available: false },
-    { day: "16", available: true },
-    { day: "17", available: true },
-    { day: "18", available: false },
-    { day: "19", available: true },
-    { day: "20", available: false },
-    { day: "21", available: false },
-    { day: "22", available: false },
-    { day: "23", available: false },
-    { day: "24", available: false },
-    { day: "25", available: false },
-    { day: "26", available: false },
-    { day: "27", available: false },
-    { day: "28", available: false },
-    { day: "29", available: false },
-    { day: "30", available: false },
-    { day: "31", available: false }
+  const [month, setMonth] = useState(() => {
+    if (selectedDate && /^\d{2}\.\d{2}\.\d{4}$/.test(selectedDate)) {
+      const [, mm, yyyy] = selectedDate.split(".");
+      return `${yyyy}-${mm}`;
+    }
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [departures, setDepartures] = useState([]);
+  const [monthOpen, setMonthOpen] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState(true);
+  const [scheduleError, setScheduleError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setScheduleLoading(true);
+    setScheduleError("");
+    setDepartures([]);
+
+    const params = new URLSearchParams({ route: route || "", month });
+    fetch(`${API}/schedule?${params.toString()}`)
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Не удалось загрузить расписание");
+        }
+        return data;
+      })
+      .then(data => {
+        if (!active) return;
+        setMonthOpen(data.monthOpen === true);
+        setDepartures(
+          data.monthOpen === true && Array.isArray(data.departures)
+            ? data.departures.map(item => item.date)
+            : []
+        );
+      })
+      .catch(error => {
+        if (!active) return;
+        setScheduleError(error.message || "Не удалось загрузить расписание");
+        setMonthOpen(false);
+      })
+      .finally(() => {
+        if (active) setScheduleLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [route, month]);
+
+  const [yearText, monthText] = month.split("-");
+  const year = Number(yearText);
+  const monthIndex = Number(monthText) - 1;
+  const monthNames = [
+    "ЯНВАРЬ", "ФЕВРАЛЬ", "МАРТ", "АПРЕЛЬ", "МАЙ", "ИЮНЬ",
+    "ИЮЛЬ", "АВГУСТ", "СЕНТЯБРЬ", "ОКТЯБРЬ", "НОЯБРЬ", "ДЕКАБРЬ"
   ];
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const firstWeekday = (new Date(year, monthIndex, 1).getDay() + 6) % 7;
+  const availableDates = new Set(departures);
+  const cells = [
+    ...Array(firstWeekday).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1)
+  ];
+
+  function shiftMonth(delta) {
+    const next = new Date(year, monthIndex + delta, 1);
+    setMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`);
+    setSelectedDate("");
+  }
 
   return (
     <div className="vizaran-calendar-page">
-
       <div className="vizaran-calendar-top">
         <button
           type="button"
@@ -1390,40 +1873,27 @@ function CalendarSelection({
         >
           <span className="back-arrow" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none">
-              <path
-                d="M19 12H5M11 6L5 12L11 18"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              <path d="M19 12H5M11 6L5 12L11 18" stroke="currentColor"
+                strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
         </button>
-
         <div className="vizaran-calendar-heading">
-
-
           <h1>{route || "Выбранный рейс"}</h1>
-
-          <p>
-            Выберите доступную дату поездки
-          </p>
+          <p>Выберите доступную дату поездки</p>
         </div>
-
       </div>
 
       <div className="vizaran-calendar-card">
-
         <div className="vizaran-calendar-month">
-          <button type="button" aria-label="Предыдущий месяц">‹</button>
-
+          <button type="button" aria-label="Предыдущий месяц"
+            onClick={() => shiftMonth(-1)} disabled={scheduleLoading}>‹</button>
           <div>
-            <strong>ОКТЯБРЬ 2026</strong>
+            <strong>{monthNames[monthIndex]} {year}</strong>
             <span>Доступные даты рейса</span>
           </div>
-
-          <button type="button" aria-label="Следующий месяц">›</button>
+          <button type="button" aria-label="Следующий месяц"
+            onClick={() => shiftMonth(1)} disabled={scheduleLoading}>›</button>
         </div>
 
         <div className="vizaran-calendar-week">
@@ -1433,58 +1903,57 @@ function CalendarSelection({
         </div>
 
         <div className="vizaran-calendar-grid">
-          {dates.map(date => {
-            const value = `${date.day}.10.2026`;
+          {cells.map((day, index) => {
+            if (!day) return <span key={`blank-${index}`} aria-hidden="true" />;
+            const value = `${String(day).padStart(2, "0")}.${monthText}.${yearText}`;
+            const available = monthOpen && availableDates.has(value);
             const selected = selectedDate === value;
 
             return (
               <button
                 key={value}
                 type="button"
-                disabled={!date.available}
+                disabled={!available || scheduleLoading || Boolean(scheduleError)}
                 className={[
                   "vizaran-calendar-day",
-                  date.available ? "available" : "unavailable",
+                  available ? "available" : "unavailable",
                   selected ? "selected" : ""
                 ].join(" ")}
-                onClick={() => date.available && setSelectedDate(value)}
+                onClick={() => available && setSelectedDate(value)}
               >
-                <strong>{date.day}</strong>
+                <strong>{day}</strong>
               </button>
             );
           })}
         </div>
 
+        {scheduleLoading && <p role="status">Загружаем расписание…</p>}
+        {scheduleError && <p role="alert">{scheduleError}</p>}
+        {!scheduleLoading && !scheduleError && !monthOpen && (
+          <p>В этом месяце рейсы пока закрыты для бронирования.</p>
+        )}
+        {!scheduleLoading && !scheduleError && monthOpen && departures.length === 0 && (
+          <p>На этот месяц открытых рейсов нет.</p>
+        )}
+
         <div className="vizaran-calendar-legend">
-          <div>
-            <span className="calendar-dot available-dot"></span>
-            <span>Рейс доступен</span>
-          </div>
-
-          <div>
-            <span className="calendar-dot unavailable-dot"></span>
-            <span>Нет рейса</span>
-          </div>
-
-          <div>
-            <span className="calendar-dot selected-dot"></span>
-            <span>Выбрано</span>
-          </div>
+          <div><span className="calendar-dot available-dot"></span><span>Рейс доступен</span></div>
+          <div><span className="calendar-dot unavailable-dot"></span><span>Нет рейса</span></div>
+          <div><span className="calendar-dot selected-dot"></span><span>Выбрано</span></div>
         </div>
-
       </div>
 
       <div className="vizaran-calendar-bottom">
         <button
           type="button"
           className="vizaran-calendar-submit"
-          disabled={!selectedDate}
+          disabled={!selectedDate || !availableDates.has(selectedDate) ||
+            scheduleLoading || Boolean(scheduleError)}
           onClick={onContinue}
         >
           <span>ПРОДОЛЖИТЬ</span>
         </button>
       </div>
-
     </div>
   );
 }
@@ -1492,6 +1961,7 @@ function CalendarSelection({
 function SeatSelection({
   route,
   service,
+  selectedDate,
   selectedSeat,
   setSelectedSeat,
   onBack,
@@ -1505,28 +1975,69 @@ function SeatSelection({
     lowerRight: `${i + 9}B`
   }));
 
-  const takenSeats = new Set([
-    "2B",
-    "6A",
-    "11B",
-    "15A"
-  ]);
+  const [bookedSeats, setBookedSeats] = useState(new Set());
+  const [disabledSeats, setDisabledSeats] = useState(new Set());
+  const [seatsLoading, setSeatsLoading] = useState(true);
+  const [seatsError, setSeatsError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setSeatsLoading(true);
+    setSeatsError("");
+    setBookedSeats(new Set());
+    setDisabledSeats(new Set());
+    setSelectedSeat("");
+
+    if (!route || !selectedDate) {
+      setSeatsError("Сначала выберите маршрут и дату поездки.");
+      setSeatsLoading(false);
+      return () => { active = false; };
+    }
+
+    const params = new URLSearchParams({ route, date: selectedDate });
+    fetch(`${API}/schedule/seats?${params.toString()}`)
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Не удалось загрузить занятость мест");
+        }
+        return data;
+      })
+      .then(data => {
+        if (!active) return;
+        if (data.available !== true) {
+          throw new Error("Этот рейс больше недоступен. Вернитесь в календарь и выберите другую дату.");
+        }
+        setBookedSeats(new Set(Array.isArray(data.bookedSeats) ? data.bookedSeats : []));
+        setDisabledSeats(new Set(Array.isArray(data.disabledSeats) ? data.disabledSeats : []));
+      })
+      .catch(error => {
+        if (!active) return;
+        setSeatsError(error.message || "Не удалось загрузить места");
+      })
+      .finally(() => {
+        if (active) setSeatsLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [route, selectedDate]);
 
   function renderSeat(seat, type) {
-    const taken = takenSeats.has(seat);
+    const taken = bookedSeats.has(seat) || disabledSeats.has(seat);
+    const unavailable = seatsLoading || Boolean(seatsError) || taken;
 
     return (
       <button
         key={seat}
         type="button"
-        disabled={taken}
+        disabled={unavailable}
         className={[
           "v-seat",
           type === "upper" ? "v-seat-upper" : "v-seat-lower",
           selectedSeat === seat ? "v-seat-selected" : "",
           taken ? "v-seat-taken" : ""
         ].join(" ")}
-        onClick={() => setSelectedSeat(seat)}
+        onClick={() => !unavailable && setSelectedSeat(seat)}
       >
         <span>{seat.replace(/[AB]/, "")}</span>
         <b>{type === "upper" ? "A" : "B"}</b>
@@ -1542,7 +2053,9 @@ function SeatSelection({
         <div className="vizaran-trip">
           <span className="vizaran-trip-label">ВАШ МАРШРУТ</span>
           <h1>{route || "Выбранный маршрут"}</h1>
-          <p>Выберите место в автобусе</p>
+          <p>Выберите место в автобусе · {selectedDate || "дата не выбрана"}</p>
+          {seatsLoading && <p role="status">Загружаем свободные места…</p>}
+          {seatsError && <p role="alert">{seatsError}</p>}
         </div>
 
       </div>
@@ -1709,7 +2222,8 @@ function SeatSelection({
 
         <button
           className="vizaran-seat-submit"
-          disabled={!selectedSeat || loading}
+          disabled={!selectedSeat || loading || seatsLoading || Boolean(seatsError) ||
+            bookedSeats.has(selectedSeat) || disabledSeats.has(selectedSeat)}
           onClick={onContinue}
         >
           {loading ? "БРОНИРУЕМ..." : "ПРОДОЛЖИТЬ"}
@@ -1969,7 +2483,7 @@ function Payment({
    BOOKINGS
 ========================= */
 
-function Bookings({ orders }) {
+function Bookings({ orders, onContinue }) {
   const [activeTab, setActiveTab] = useState("upcoming");
 
   const visaRunOrders = orders.filter((order) => {
@@ -2121,6 +2635,18 @@ function Bookings({ orders }) {
                   <span>Стоимость поездки</span>
                   <strong>{order.priceRub?.toLocaleString("ru-RU")} ₽</strong>
                 </div>
+
+                {["draft", "in_progress", "awaiting_payment"].includes(order.status) && (
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => onContinue?.(order)}
+                  >
+                    {order.status === "awaiting_payment"
+                      ? "Продолжить оплату"
+                      : "Продолжить бронирование"}
+                  </button>
+                )}
               </div>
             );
           })}
@@ -2255,6 +2781,17 @@ function Profile({
 
       </section>
 
+      {user?.username?.toLowerCase() === "yosoycastello" && (
+        <button
+          type="button"
+          className="admin-settings-button"
+          onClick={() => window.dispatchEvent(new CustomEvent("vizaran:open-admin"))}
+        >
+          <span>Настройки</span>
+          <span aria-hidden="true">→</span>
+        </button>
+      )}
+
       <section className="legal-card">
 
         <div>
@@ -2284,6 +2821,717 @@ function Profile({
    LEGAL
 ========================= */
 
+
+function AdminPanel({
+  user,
+  orders,
+  loading,
+  error,
+  onRefresh,
+  onReview,
+  onBack
+}) {
+  const [section, setSection] = useState("trips");
+  const [selectedTrip, setSelectedTrip] = useState(null);
+  const [receiptPreview, setReceiptPreview] = useState(null);
+  const [receiptLoading, setReceiptLoading] = useState(false);
+  const [receiptError, setReceiptError] = useState("");
+  const [schedule, setSchedule] = useState({ months: [], departures: [] });
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [scheduleMessage, setScheduleMessage] = useState("");
+  const [scheduleError, setScheduleError] = useState("");
+  const [scheduleRoute, setScheduleRoute] = useState("Нячанг — Лаос");
+  const [scheduleMonth, setScheduleMonth] = useState("2026-10");
+  const [scheduleDate, setScheduleDate] = useState("2026-10-08");
+  const [serviceSettings, setServiceSettings] = useState({ STAMP: true, VISA: true });
+  const [serviceSettingsLoading, setServiceSettingsLoading] = useState(false);
+  const [serviceSettingsSaving, setServiceSettingsSaving] = useState(false);
+  const [serviceSettingsMessage, setServiceSettingsMessage] = useState("");
+  const [serviceSettingsError, setServiceSettingsError] = useState("");
+
+  async function loadAdminServiceSettings() {
+    setServiceSettingsLoading(true);
+    setServiceSettingsError("");
+    setServiceSettingsMessage("");
+    try {
+      const response = await fetch(`${API}/admin/service-settings`, {
+        headers: { "x-telegram-init-data": tg?.initData || "" },
+        cache: "no-store"
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Не удалось загрузить настройки услуг");
+      }
+      setServiceSettings({
+        STAMP: data.settings?.STAMP !== false,
+        VISA: data.settings?.VISA !== false
+      });
+    } catch (error) {
+      setServiceSettingsError(error.message || "Ошибка загрузки настроек");
+    } finally {
+      setServiceSettingsLoading(false);
+    }
+  }
+
+  async function saveAdminServiceSettings(nextSettings) {
+    setServiceSettingsSaving(true);
+    setServiceSettingsError("");
+    setServiceSettingsMessage("");
+    try {
+      const response = await fetch(`${API}/admin/service-settings`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-telegram-init-data": tg?.initData || ""
+        },
+        body: JSON.stringify({ settings: nextSettings })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Не удалось сохранить настройки услуг");
+      }
+      const saved = {
+        STAMP: data.settings?.STAMP !== false,
+        VISA: data.settings?.VISA !== false
+      };
+      setServiceSettings(saved);
+      setServiceSettingsMessage("Настройки сохранены");
+      window.dispatchEvent(new CustomEvent("vizaran:service-settings-updated", {
+        detail: saved
+      }));
+    } catch (error) {
+      setServiceSettingsError(error.message || "Ошибка сохранения настроек");
+    } finally {
+      setServiceSettingsSaving(false);
+    }
+  }
+
+  useEffect(() => {
+    if (section === "services") loadAdminServiceSettings();
+  }, [section]);
+
+  const scheduleRoutes = [
+    "Нячанг — Лаос",
+    "Нячанг — Камбоджа",
+    "Дананг — Лаос"
+  ];
+
+  useEffect(() => {
+    if (section !== "schedule") return;
+    let cancelled = false;
+
+    async function loadSchedule() {
+      setScheduleLoading(true);
+      setScheduleError("");
+      try {
+        const response = await fetch(`${API}/admin/schedule`, {
+          headers: { "x-telegram-init-data": tg?.initData || "" },
+          cache: "no-store"
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Не удалось загрузить расписание");
+        if (!cancelled) setSchedule(data.schedule || { months: [], departures: [] });
+      } catch (error) {
+        if (!cancelled) setScheduleError(error.message || "Ошибка загрузки расписания");
+      } finally {
+        if (!cancelled) setScheduleLoading(false);
+      }
+    }
+
+    loadSchedule();
+    return () => { cancelled = true; };
+  }, [section]);
+
+  function dateToDisplay(isoDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate || "")) return "";
+    const [year, month, day] = isoDate.split("-");
+    return `${day}.${month}.${year}`;
+  }
+
+  function displayToDate(value) {
+    if (!/^\d{2}\.\d{2}\.\d{4}$/.test(value || "")) return "";
+    const [day, month, year] = value.split(".");
+    return `${year}-${month}-${day}`;
+  }
+
+  function updateSchedule(patch) {
+    setSchedule(previous => ({ ...previous, ...patch }));
+    setScheduleMessage("");
+    setScheduleError("");
+  }
+
+  function saveMonth() {
+    if (!scheduleMonth) return;
+    const months = [...schedule.months];
+    const index = months.findIndex(item =>
+      item.route === scheduleRoute && item.month === scheduleMonth
+    );
+    const entry = {
+      route: scheduleRoute,
+      month: scheduleMonth,
+      open: index >= 0 ? !months[index].open : true
+    };
+    if (index >= 0) months[index] = entry;
+    else months.push(entry);
+    updateSchedule({ months });
+  }
+
+  function saveDeparture() {
+    const date = dateToDisplay(scheduleDate);
+    if (!date) return;
+    const departures = [...schedule.departures];
+    const index = departures.findIndex(item =>
+      item.route === scheduleRoute && item.date === date
+    );
+    if (index < 0) {
+      departures.push({ route: scheduleRoute, date, open: true, disabledSeats: [] });
+    } else {
+      departures[index] = { ...departures[index], open: !departures[index].open };
+    }
+    updateSchedule({ departures });
+  }
+
+  function toggleSeatForDeparture(date, seat) {
+    const departures = schedule.departures.map(item => {
+      if (item.route !== scheduleRoute || item.date !== date) return item;
+      const disabledSeats = new Set(item.disabledSeats || []);
+      if (disabledSeats.has(seat)) disabledSeats.delete(seat);
+      else disabledSeats.add(seat);
+      return { ...item, disabledSeats: [...disabledSeats] };
+    });
+    updateSchedule({ departures });
+  }
+
+  async function persistSchedule() {
+    setScheduleSaving(true);
+    setScheduleError("");
+    setScheduleMessage("");
+    try {
+      const response = await fetch(`${API}/admin/schedule`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-telegram-init-data": tg?.initData || ""
+        },
+        body: JSON.stringify({ schedule })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Не удалось сохранить расписание");
+      setSchedule(data.schedule);
+      setScheduleMessage("Расписание сохранено");
+    } catch (error) {
+      setScheduleError(error.message || "Ошибка сохранения");
+    } finally {
+      setScheduleSaving(false);
+    }
+  }
+
+
+  useEffect(() => {
+    if (user?.username?.toLowerCase() === "yosoycastello") {
+      onRefresh();
+    }
+  }, [user?.username]);
+
+  if (user?.username?.toLowerCase() !== "yosoycastello") {
+    return (
+      <div className="profile-page">
+        <h1>Доступ запрещён</h1>
+        <button type="button" onClick={onBack}>Назад в профиль</button>
+      </div>
+    );
+  }
+
+  const pending = orders.filter(order => order.status === "payment_check");
+
+  async function openReceipt(order) {
+    setReceiptLoading(true);
+    setReceiptError("");
+    try {
+      const response = await fetch(
+        `${API}/admin/orders/${encodeURIComponent(order.id)}/receipt`,
+        {
+          headers: {
+            "x-telegram-init-data": tg?.initData || ""
+          },
+          cache: "no-store"
+        }
+      );
+
+      if (!response.ok) {
+        let message = "Не удалось открыть чек";
+        try {
+          const data = await response.json();
+          message = data.error || message;
+        } catch {}
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setReceiptPreview(previous => {
+        if (previous?.url) URL.revokeObjectURL(previous.url);
+        return {
+          url,
+          name: order.receipt?.originalName || "Чек",
+          type: blob.type
+        };
+      });
+    } catch (error) {
+      setReceiptError(error.message || "Не удалось открыть чек");
+    } finally {
+      setReceiptLoading(false);
+    }
+  }
+
+  function closeReceipt() {
+    setReceiptPreview(previous => {
+      if (previous?.url) URL.revokeObjectURL(previous.url);
+      return null;
+    });
+  }
+
+
+  const tripsMap = orders.reduce((acc, order) => {
+    const route = order.route || "Маршрут не указан";
+    const date = order.travelDate || "";
+    const key = `${route}__${date}`;
+
+    if (!acc[key]) {
+      acc[key] = { key, route, date, orders: [] };
+    }
+
+    acc[key].orders.push(order);
+    return acc;
+  }, {});
+
+  const trips = Object.values(tripsMap).sort((a, b) => {
+    if (!a.date && !b.date) return a.route.localeCompare(b.route, "ru");
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return a.date.localeCompare(b.date) || a.route.localeCompare(b.route, "ru");
+  });
+
+  const currentTrip = trips.find(trip => trip.key === selectedTrip);
+
+  function formatDate(value) {
+    if (!value) return "Дата не указана";
+    const parts = value.split("-");
+    if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+    return value;
+  }
+
+  return (
+    <div className="profile-page admin-page">
+      <header className="page-header admin-page-header">
+        <span className="page-kicker">FESTO / ADMIN</span>
+        <h1>Панель управления</h1>
+        <p>Рейсы, пассажиры и проверка оплат</p>
+      </header>
+
+      <div className="admin-toolbar">
+        <button type="button" className="admin-back-button" onClick={onBack}>
+          <span aria-hidden="true">←</span> Профиль
+        </button>
+        <button
+          type="button"
+          className="admin-refresh-button"
+          onClick={onRefresh}
+          disabled={loading}
+        >
+          {loading ? "Загрузка…" : "↻ Обновить"}
+        </button>
+      </div>
+
+      <nav className="admin-tabs" aria-label="Разделы админ-панели">
+        <button
+          type="button"
+          className={section === "trips" ? "admin-tab active" : "admin-tab"}
+          onClick={() => {
+            setSection("trips");
+            setSelectedTrip(null);
+          }}
+        >
+          <span>Рейсы</span>
+          <span className="admin-tab-count">{trips.length}</span>
+        </button>
+        <button
+          type="button"
+          className={section === "receipts" ? "admin-tab active" : "admin-tab"}
+          onClick={() => {
+            setSection("receipts");
+            setSelectedTrip(null);
+          }}
+        >
+          <span>Чеки</span>
+          <span className="admin-tab-count">{pending.length}</span>
+        </button>
+        <button
+          type="button"
+          className={section === "schedule" ? "admin-tab active" : "admin-tab"}
+          onClick={() => {
+            setSection("schedule");
+            setSelectedTrip(null);
+          }}
+        >
+          <span>Расписание</span>
+        </button>
+        <button
+          type="button"
+          className={section === "services" ? "admin-tab active" : "admin-tab"}
+          onClick={() => {
+            setSection("services");
+            setSelectedTrip(null);
+          }}
+        >
+          <span>Услуги</span>
+        </button>
+      </nav>
+
+      {error && <p className="admin-error" role="alert">{error}</p>}
+
+      {section === "trips" && (
+        <section className="admin-content">
+          {currentTrip ? (
+            <>
+              <button
+                type="button"
+                className="admin-back-button admin-trip-back"
+                onClick={() => setSelectedTrip(null)}
+              >
+                ← Все рейсы
+              </button>
+
+              <div className="admin-trip-heading">
+                <span className="page-kicker">СПИСОК ПАССАЖИРОВ</span>
+                <h2>{currentTrip.route}</h2>
+                <p>{formatDate(currentTrip.date)}</p>
+                <span className="admin-passenger-count">
+                  {currentTrip.orders.length} пассажир(а/ов)
+                </span>
+              </div>
+
+              {currentTrip.orders.map(order => (
+                <article className="admin-passenger-card" key={order.id}>
+                  <div className="admin-passenger-top">
+                    <div>
+                      <h3>{order.passport?.fullName || order.firstName || "Пассажир"}</h3>
+                      <p>Место: {order.seat || "—"}</p>
+                    </div>
+                    <span className={`admin-status status-${order.status}`}>
+                      {({
+                        awaiting_payment: "Ожидает оплату",
+                        payment_check: "Чек на проверке",
+                        confirmed: "Подтверждён",
+                        cancelled: "Отменён"
+                      })[order.status] || order.status || "—"}
+                    </span>
+                  </div>
+
+                  <div className="admin-passenger-details">
+                    <div><span>Паспорт</span><strong>{order.passport?.passportNumber || "—"}</strong></div>
+                    <div><span>Дата рождения</span><strong>{order.passport?.birthDate || "—"}</strong></div>
+                    <div><span>Въезд во Вьетнам</span><strong>{formatDate(order.vietnamEntryDate)}</strong></div>
+                    <div><span>Разрешение до</span><strong>{formatDate(order.permissionValidUntil)}</strong></div>
+                    <div><span>Напиток</span><strong>{order.options?.drink || "Не выбран"}</strong></div>
+                    <div><span>Перекус</span><strong>{order.options?.snack || "Не выбран"}</strong></div>
+                    <div><span>Таблетки от укачивания</span><strong>{order.options?.motionSicknessTablets ? "Да" : "Нет"}</strong></div>
+                    <div><span>Вода</span><strong>{order.options?.water || "Включена"}</strong></div>
+                  </div>
+                </article>
+              ))}
+            </>
+          ) : (
+            <>
+              <div className="admin-section-heading">
+                <h2>Ближайшие рейсы</h2>
+                <p>Выберите дату, чтобы открыть список пассажиров.</p>
+              </div>
+
+              {!trips.length && !loading && (
+                <div className="admin-empty">
+                  <span aria-hidden="true">▤</span>
+                  <strong>Пока нет рейсов</strong>
+                  <p>Здесь появятся рейсы с бронированиями.</p>
+                </div>
+              )}
+
+              {trips.map((trip, index) => (
+                <button
+                  type="button"
+                  className="admin-trip-card"
+                  key={trip.key}
+                  onClick={() => setSelectedTrip(trip.key)}
+                >
+                  <span className="admin-trip-date">
+                    {trip.date ? formatDate(trip.date) : "Без даты"}
+                  </span>
+                  <span className="admin-trip-main">
+                    <strong>{trip.route}</strong>
+                    <small>
+                      {trip.orders.length} пассажир(а/ов)
+                      {trip.orders.some(order => order.status === "payment_check")
+                        ? " · Есть чек на проверке"
+                        : ""}
+                    </small>
+                  </span>
+                  <span className="admin-trip-arrow" aria-hidden="true">›</span>
+                </button>
+              ))}
+            </>
+          )}
+        </section>
+      )}
+
+      {section === "services" && (
+        <section className="admin-content admin-schedule">
+          <div className="admin-section-heading">
+            <h2>Доступность услуг</h2>
+            <p>Отключённая услуга останется видна клиентам с пометкой «Временно недоступно».</p>
+          </div>
+
+          {serviceSettingsLoading ? (
+            <div className="admin-empty"><strong>Загружаем настройки…</strong></div>
+          ) : (
+            <div className="admin-schedule-card">
+              {[
+                { key: "STAMP", title: "Штамп на 45 дней", price: "500 000 ₫ · 1 600 ₽" },
+                { key: "VISA", title: "Виза + штамп на 90 дней", price: "900 000 ₫ · 3 000 ₽" }
+              ].map(item => (
+                <label key={item.key} className="admin-service-setting">
+                  <span className="admin-service-setting-copy">
+                    <strong>{item.title}</strong>
+                    <small>{item.price}</small>
+                    <small>{serviceSettings[item.key] ? "Доступна клиентам" : "Временно недоступна"}</small>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={serviceSettings[item.key]}
+                    disabled={serviceSettingsSaving}
+                    onChange={event => saveAdminServiceSettings({
+                      ...serviceSettings,
+                      [item.key]: event.target.checked
+                    })}
+                    aria-label={`Доступность услуги: ${item.title}`}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+          {serviceSettingsMessage && <p className="admin-success" role="status">{serviceSettingsMessage}</p>}
+          {serviceSettingsError && <p className="admin-error" role="alert">{serviceSettingsError}</p>}
+        </section>
+      )}
+
+      {section === "schedule" && (
+        <section className="admin-content admin-schedule">
+          <div className="admin-section-heading">
+            <h2>Расписание и места</h2>
+            <p>Открывайте месяцы и даты, отключайте отдельные места. Изменения применяются после сохранения.</p>
+          </div>
+
+          {scheduleLoading ? (
+            <div className="admin-empty"><strong>Загружаем расписание…</strong></div>
+          ) : (
+            <>
+              <label className="admin-schedule-field">
+                <span>Маршрут</span>
+                <select value={scheduleRoute} onChange={event => setScheduleRoute(event.target.value)}>
+                  {scheduleRoutes.map(item => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+
+              <div className="admin-schedule-card">
+                <h3>Доступность месяца</h3>
+                <label className="admin-schedule-field">
+                  <span>Месяц</span>
+                  <input type="month" value={scheduleMonth} onChange={event => setScheduleMonth(event.target.value)} />
+                </label>
+                <p>
+                  Статус: {
+                    schedule.months.find(item => item.route === scheduleRoute && item.month === scheduleMonth)?.open
+                      ? "Открыт"
+                      : "Закрыт"
+                  }
+                </p>
+                <button type="button" className="admin-schedule-secondary" onClick={saveMonth}>
+                  {schedule.months.some(item => item.route === scheduleRoute && item.month === scheduleMonth && item.open)
+                    ? "Закрыть месяц"
+                    : "Открыть месяц"}
+                </button>
+              </div>
+
+              <div className="admin-schedule-card">
+                <h3>Дата рейса</h3>
+                <label className="admin-schedule-field">
+                  <span>Дата</span>
+                  <input type="date" value={scheduleDate} onChange={event => {
+                    setScheduleDate(event.target.value);
+                    setScheduleMonth(event.target.value.slice(0, 7));
+                  }} />
+                </label>
+                <p>Добавление даты открывает рейс; повторное нажатие переключает его доступность.</p>
+                <button type="button" className="admin-schedule-secondary" onClick={saveDeparture}>
+                  {schedule.departures.some(item => item.route === scheduleRoute && item.date === dateToDisplay(scheduleDate) && item.open)
+                    ? "Закрыть рейс на эту дату"
+                    : "Добавить / открыть рейс"}
+                </button>
+              </div>
+
+              <div className="admin-schedule-card">
+                <h3>Места по датам</h3>
+                <p>Нажмите на место, чтобы отключить его или снова сделать доступным. Занятые места по заказам отключить нельзя.</p>
+                {schedule.departures
+                  .filter(item => item.route === scheduleRoute)
+                  .sort((a, b) => displayToDate(a.date).localeCompare(displayToDate(b.date)))
+                  .map(item => (
+                    <div className="admin-schedule-departure" key={`${item.route}-${item.date}`}>
+                      <div className="admin-schedule-departure-head">
+                        <strong>{item.date}</strong>
+                        <span>{item.open ? "Рейс открыт" : "Рейс закрыт"}</span>
+                      </div>
+                      <div className="admin-schedule-seat-grid">
+                        {Array.from({ length: 32 }, (_, i) => {
+                          const seat = `${Math.floor(i / 2) + 1 + (i >= 16 ? 8 : 0)}${i % 2 === 0 ? "A" : "B"}`;
+                          const disabled = (item.disabledSeats || []).includes(seat);
+                          return (
+                            <button
+                              key={seat}
+                              type="button"
+                              className={disabled ? "admin-schedule-seat disabled" : "admin-schedule-seat"}
+                              aria-pressed={disabled}
+                              onClick={() => toggleSeatForDeparture(item.date, seat)}
+                              title={disabled ? "Сделать доступным" : "Отключить место"}
+                            >{seat}</button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                {!schedule.departures.some(item => item.route === scheduleRoute) && (
+                  <p>Для этого маршрута пока нет дат. Добавьте рейс выше.</p>
+                )}
+              </div>
+
+              {scheduleError && <p className="admin-error" role="alert">{scheduleError}</p>}
+              {scheduleMessage && <p className="admin-schedule-success" role="status">{scheduleMessage}</p>}
+              <button type="button" className="admin-schedule-save" onClick={persistSchedule} disabled={scheduleSaving}>
+                {scheduleSaving ? "Сохраняем…" : "Сохранить расписание"}
+              </button>
+            </>
+          )}
+        </section>
+      )}
+
+      {section === "receipts" && (
+        <section className="admin-content">
+          <div className="admin-section-heading">
+            <h2>Чеки на проверке</h2>
+            <p>Подтверждайте оплату или отклоняйте чек с указанием причины.</p>
+          </div>
+
+          {!pending.length && !loading && (
+            <div className="admin-empty">
+              <span aria-hidden="true">✓</span>
+              <strong>Нет чеков на проверке</strong>
+              <p>Новые чеки появятся здесь после отправки клиентом.</p>
+            </div>
+          )}
+
+          {pending.map(order => (
+            <article className="admin-receipt-card" key={order.id}>
+              <span className="page-kicker">ЗАКАЗ {order.id}</span>
+              <h3>{order.passport?.fullName || order.firstName || "Пассажир"}</h3>
+              <p>{order.route || "Маршрут не указан"}</p>
+              <p>Дата поездки: {formatDate(order.travelDate)}</p>
+              <p>Место: {order.seat || "—"}</p>
+              <div className="admin-receipt-price">
+                {order.priceVnd ?? "—"} ₫ <span>/</span> {order.priceRub ?? "—"} ₽
+              </div>
+              <div className="admin-receipt-file">
+                <span>Файл чека</span>
+                <strong>{order.receipt?.originalName || "Файл не указан"}</strong>
+                <button
+                  type="button"
+                  className="admin-view-receipt-button"
+                  onClick={() => openReceipt(order)}
+                  disabled={receiptLoading}
+                >
+                  {receiptLoading ? "Загрузка…" : "Посмотреть чек"}
+                </button>
+              </div>
+              <div className="admin-receipt-actions">
+                <button
+                  type="button"
+                  className="admin-confirm-button"
+                  onClick={() => onReview(order.id, "confirm")}
+                >
+                  Подтвердить
+                </button>
+                <button
+                  type="button"
+                  className="admin-reject-button"
+                  onClick={() => onReview(order.id, "reject")}
+                >
+                  Отклонить
+                </button>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+      {receiptError && (
+        <div className="admin-receipt-error" role="alert">
+          <span>{receiptError}</span>
+          <button type="button" onClick={() => setReceiptError("")}>Закрыть</button>
+        </div>
+      )}
+
+      {receiptPreview && (
+        <div
+          className="admin-receipt-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Просмотр чека"
+          onClick={event => {
+            if (event.target === event.currentTarget) closeReceipt();
+          }}
+        >
+          <div className="admin-receipt-modal-panel">
+            <div className="admin-receipt-modal-header">
+              <div>
+                <span className="page-kicker">ПРОВЕРКА ОПЛАТЫ</span>
+                <h2>{receiptPreview.name}</h2>
+              </div>
+              <button
+                type="button"
+                className="admin-receipt-modal-close"
+                onClick={closeReceipt}
+                aria-label="Закрыть просмотр"
+              >×</button>
+            </div>
+            {receiptPreview.type === "application/pdf" ? (
+              <iframe
+                className="admin-receipt-document"
+                src={receiptPreview.url}
+                title="Чек в формате PDF"
+              />
+            ) : receiptPreview.type.startsWith("image/") ? (
+              <img
+                className="admin-receipt-image"
+                src={receiptPreview.url}
+                alt="Загруженный чек"
+              />
+            ) : (
+              <p>Этот формат файла нельзя показать в окне просмотра.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function LegalPage({
   title,

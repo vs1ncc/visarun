@@ -1,5 +1,13 @@
-
-client/dist/
-
 .vercel/
 .env.local
+client/dist/
+
+# Local backups — keep out of commits
+*.bak
+*.backup
+*.backup-*
+*.before-*
+*.permission.bak
+*.damaged-save
+
+*.bak-*

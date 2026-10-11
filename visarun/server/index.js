@@ -1,3 +1,4 @@
+import { claimSeat, releaseSeat, seatLockKey } from "./seat-lock.js";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -8,6 +9,8 @@ import multer from "multer";
 import OpenAI from "openai";
 import { Telegraf } from "telegraf";
 import { Redis } from "@upstash/redis";
+import { put, get } from "@vercel/blob";
+import { Readable } from "node:stream";
 
 dotenv.config();
 
@@ -93,22 +96,33 @@ const openai = process.env.OPENAI_API_KEY
 ========================= */
 
 function validateTelegramInitData(initData) {
-  if (!initData || !process.env.BOT_TOKEN) {
-    return null;
-  }
+  if (!initData || !process.env.BOT_TOKEN) return null;
 
   try {
     const params = new URLSearchParams(initData);
     const hash = params.get("hash");
+    const authDateRaw = params.get("auth_date");
 
-    if (!hash) {
+    if (!hash || !authDateRaw || !/^[0-9]+$/.test(authDateRaw)) {
+      return null;
+    }
+
+    const authDate = Number(authDateRaw);
+    const now = Math.floor(Date.now() / 1000);
+    const MAX_AGE_SECONDS = 24 * 60 * 60;
+
+    if (
+      !Number.isSafeInteger(authDate) ||
+      authDate > now + 60 ||
+      now - authDate > MAX_AGE_SECONDS
+    ) {
+      console.warn("Telegram initData expired or invalid auth_date");
       return null;
     }
 
     params.delete("hash");
 
-    const dataCheckString = Array
-      .from(params.entries())
+    const dataCheckString = Array.from(params.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, value]) => `${key}=${value}`)
       .join("\n");
@@ -124,10 +138,10 @@ function validateTelegramInitData(initData) {
       .digest("hex");
 
     if (
-      calculatedHash.length !== hash.length ||
+      !/^[a-f0-9]{64}$/i.test(hash) ||
       !crypto.timingSafeEqual(
-        Buffer.from(calculatedHash, "utf8"),
-        Buffer.from(hash, "utf8")
+        Buffer.from(calculatedHash, "hex"),
+        Buffer.from(hash, "hex")
       )
     ) {
       console.error("Telegram initData hash mismatch");
@@ -135,21 +149,39 @@ function validateTelegramInitData(initData) {
     }
 
     const userString = params.get("user");
+    if (!userString) return null;
 
-    if (!userString) {
+    const user = JSON.parse(userString);
+    if (!user || !Number.isSafeInteger(user.id) || user.id <= 0) {
       return null;
     }
 
-    return JSON.parse(userString);
-
+    return user;
   } catch (error) {
-    console.error(
-      "Telegram initData validation error:",
-      error.message
-    );
+    console.error("Telegram initData validation error:", error.message);
     return null;
   }
 }
+
+async function requireAdmin(req) {
+  const initData =
+    req.get("x-telegram-init-data") ||
+    req.body?.initData;
+
+  const telegramUser = validateTelegramInitData(initData);
+  const adminId = process.env.ADMIN_TELEGRAM_ID;
+
+  if (
+    !telegramUser ||
+    !adminId ||
+    String(telegramUser.id) !== String(adminId)
+  ) {
+    return null;
+  }
+
+  return telegramUser;
+}
+
 /* =========================
    AUTH
 ========================= */
@@ -197,7 +229,13 @@ app.post("/api/auth", async (req, res) => {
 
   res.json({
     success: true,
-    user
+    user: {
+      telegramId: user.telegramId,
+      username: user.username || "",
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      photoUrl: user.photoUrl || ""
+    }
   });
 });
 
@@ -206,95 +244,162 @@ app.post("/api/auth", async (req, res) => {
 ========================= */
 
 app.post("/api/profile/phone", async (req, res) => {
-  const { telegramId, phone } = req.body;
+  try {
+    const telegramUser = validateTelegramInitData(
+      req.get("x-telegram-init-data") || req.body?.initData
+    );
 
-  const users = await readJson(USERS_FILE);
+    if (!telegramUser) {
+      return res.status(401).json({
+        success: false,
+        error: "Необходимо подтвердить авторизацию Telegram"
+      });
+    }
 
-  const user = users.find(
-    (item) => String(item.telegramId) === String(telegramId)
-  );
+    const { phone } = req.body;
+    if (typeof phone !== "string" || !phone.trim() || phone.length > 40) {
+      return res.status(400).json({
+        success: false,
+        error: "Укажите корректный номер телефона"
+      });
+    }
 
-  if (!user) {
-    return res.status(404).json({
-      success: false
+    const users = await readJson(USERS_FILE);
+    const user = users.find(
+      (item) => String(item.telegramId) === String(telegramUser.id)
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false });
+    }
+
+    user.phone = phone.trim();
+    await writeJson(USERS_FILE, users);
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("SAVE PHONE ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось сохранить телефон"
     });
   }
-
-  user.phone = phone;
-
-  await writeJson(USERS_FILE, users);
-
-  res.json({
-    success: true
-  });
 });
 
 /* =========================
    SAVE PASSPORT
 ========================= */
 
-app.post("/api/profile/passport", async (req, res) => {
-  const {
-    telegramId,
-    passengers,
-    consent
-  } = req.body;
+async function verifyTurnstileToken(token, remoteIp) {
+  const secret = process.env.TURNSTILE_SECRET;
+  if (!secret || !token || typeof token !== "string") return false;
 
-  if (!consent) {
-    return res.status(400).json({
-      success: false,
-      error: "Необходимо согласие на обработку персональных данных"
-    });
-  }
-
-  const users = await readJson(USERS_FILE);
-
-  const user = users.find(
-    (item) => String(item.telegramId) === String(telegramId)
-  );
-
-  if (!user) {
-    return res.status(404).json({
-      success: false
-    });
-  }
-
-  const normalizedPassengers = Array.isArray(passengers)
-    ? passengers
-        .filter(
-          (passenger) =>
-            passenger &&
-            passenger.fullName &&
-            passenger.birthDate &&
-            passenger.passportNumber
-        )
-        .map((passenger) => ({
-          fullName: passenger.fullName,
-          birthDate: passenger.birthDate,
-          passportNumber: passenger.passportNumber
-        }))
-    : [];
-
-  if (normalizedPassengers.length === 0) {
-    return res.status(400).json({
-      success: false,
-      error: "Необходимо указать данные пассажира"
-    });
-  }
-
-  user.passengers = normalizedPassengers;
-
-  user.passport = {
-    ...normalizedPassengers[0],
-    consent: true,
-    consentAt: new Date().toISOString()
-  };
-
-  await writeJson(USERS_FILE, users);
-
-  res.json({
-    success: true
+  const form = new URLSearchParams({
+    secret,
+    response: token
   });
+  if (remoteIp) form.set("remoteip", remoteIp);
+
+  const response = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form
+    }
+  );
+  if (!response.ok) return false;
+  const result = await response.json();
+  return result.success === true;
+}
+
+app.post("/api/profile/passport", async (req, res) => {
+  try {
+    const telegramUser = validateTelegramInitData(
+      req.get("x-telegram-init-data") || req.body?.initData
+    );
+
+    if (!telegramUser) {
+      return res.status(401).json({
+        success: false,
+        error: "Необходимо подтвердить авторизацию Telegram"
+      });
+    }
+
+    const { passengers, consent, turnstileToken } = req.body;
+
+    let captchaValid = false;
+    try {
+      captchaValid = await verifyTurnstileToken(turnstileToken, req.ip);
+    } catch (error) {
+      console.error("TURNSTILE VERIFY ERROR:", error.message);
+    }
+
+    if (!captchaValid) {
+      return res.status(403).json({
+        success: false,
+        error: "Проверка Cloudflare не пройдена. Обновите капчу и попробуйте снова."
+      });
+    }
+
+    if (consent !== true) {
+      return res.status(400).json({
+        success: false,
+        error: "Необходимо согласие на обработку персональных данных"
+      });
+    }
+
+    const normalizedPassengers = Array.isArray(passengers)
+      ? passengers
+          .filter((passenger) =>
+            passenger &&
+            typeof passenger.fullName === "string" &&
+            passenger.fullName.trim() &&
+            typeof passenger.birthDate === "string" &&
+            passenger.birthDate.trim() &&
+            typeof passenger.passportNumber === "string" &&
+            passenger.passportNumber.trim()
+          )
+          .map((passenger) => ({
+            fullName: passenger.fullName.trim(),
+            birthDate: passenger.birthDate.trim(),
+            passportNumber: passenger.passportNumber.trim()
+          }))
+      : [];
+
+    if (normalizedPassengers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Необходимо указать данные пассажира"
+      });
+    }
+
+    const users = await readJson(USERS_FILE);
+    const user = users.find(
+      (item) => String(item.telegramId) === String(telegramUser.id)
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false });
+    }
+
+    user.passengers = normalizedPassengers;
+    user.passport = {
+      ...normalizedPassengers[0],
+      consent: true,
+      consentAt: new Date().toISOString()
+    };
+
+    await writeJson(USERS_FILE, users);
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("SAVE PASSPORT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось сохранить паспортные данные"
+    });
+  }
 });
 
 /* =========================
@@ -302,23 +407,41 @@ app.post("/api/profile/passport", async (req, res) => {
 ========================= */
 
 app.get("/api/profile/:telegramId", async (req, res) => {
-  const users = await readJson(USERS_FILE);
+  try {
+    const initData = req.get("x-telegram-init-data");
+    const telegramUser = validateTelegramInitData(initData);
 
-  const user = users.find(
-    (item) =>
-      String(item.telegramId) === String(req.params.telegramId)
-  );
+    if (!telegramUser) {
+      return res.status(401).json({
+        success: false,
+        error: "Необходимо подтвердить авторизацию Telegram"
+      });
+    }
 
-  if (!user) {
-    return res.status(404).json({
-      success: false
+    if (String(telegramUser.id) !== String(req.params.telegramId)) {
+      return res.status(403).json({
+        success: false,
+        error: "Нет доступа к профилю другого пользователя"
+      });
+    }
+
+    const users = await readJson(USERS_FILE);
+    const user = users.find(
+      (item) => String(item.telegramId) === String(telegramUser.id)
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false });
+    }
+
+    return res.json({ success: true, user });
+  } catch (error) {
+    console.error("GET PROFILE ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось загрузить профиль"
     });
   }
-
-  res.json({
-    success: true,
-    user
-  });
 });
 
 /* =========================
@@ -327,12 +450,50 @@ app.get("/api/profile/:telegramId", async (req, res) => {
 
 app.post("/api/orders/draft", async (req, res) => {
   try {
-    const { telegramId, route, service, permissionType, priceRub, priceVnd } = req.body;
+    const telegramUser = validateTelegramInitData(
+      req.get("x-telegram-init-data") || req.body?.initData
+    );
 
-    if (!telegramId || !route || !service) {
+    if (!telegramUser) {
+      return res.status(401).json({
+        success: false,
+        error: "Требуется подтверждение Telegram"
+      });
+    }
+
+    const { route, service, permissionType, priceRub, priceVnd } = req.body;
+    const telegramId = String(telegramUser.id);
+
+    if (req.body?.telegramId && String(req.body.telegramId) !== telegramId) {
+      return res.status(403).json({
+        success: false,
+        error: "Telegram ID не совпадает с авторизованным пользователем"
+      });
+    }
+
+    if (!route || !service) {
       return res.status(400).json({
         success: false,
         error: "Не хватает данных для черновика"
+      });
+    }
+
+    const settings = await readServiceSettings();
+    const serviceType = permissionType === "VISA" ? "VISA" : "STAMP";
+    const expectedService = serviceType === "VISA"
+      ? "Виза + штамп на 90 дней"
+      : "Штамп на 45 дней";
+
+    if (!settings[serviceType]) {
+      return res.status(409).json({
+        success: false,
+        error: "Эта услуга временно недоступна. Выберите другую услугу."
+      });
+    }
+    if (service !== expectedService) {
+      return res.status(400).json({
+        success: false,
+        error: "Некорректный тип услуги"
       });
     }
 
@@ -400,6 +561,17 @@ app.post("/api/orders/draft", async (req, res) => {
 
 app.patch("/api/orders/:id", async (req, res) => {
   try {
+    const telegramUser = validateTelegramInitData(
+      req.get("x-telegram-init-data") || req.body?.initData
+    );
+
+    if (!telegramUser) {
+      return res.status(401).json({
+        success: false,
+        error: "Требуется подтверждение Telegram"
+      });
+    }
+
     const orders = await readJson(ORDERS_FILE);
     const order = orders.find((item) => item.id === req.params.id);
 
@@ -410,10 +582,7 @@ app.patch("/api/orders/:id", async (req, res) => {
       });
     }
 
-    if (
-      !req.body.telegramId ||
-      String(order.telegramId) !== String(req.body.telegramId)
-    ) {
+    if (String(order.telegramId) !== String(telegramUser.id)) {
       return res.status(403).json({
         success: false,
         error: "Нет доступа к заказу"
@@ -427,11 +596,56 @@ app.patch("/api/orders/:id", async (req, res) => {
       });
     }
 
+    const proposedRoute = Object.prototype.hasOwnProperty.call(req.body, "route")
+      ? req.body.route : order.route;
+    const proposedDate = Object.prototype.hasOwnProperty.call(req.body, "travelDate")
+      ? req.body.travelDate : order.travelDate;
+    const proposedSeat = Object.prototype.hasOwnProperty.call(req.body, "seat")
+      ? req.body.seat : order.seat;
+
+    if (proposedSeat && proposedRoute && proposedDate) {
+      const checked = await validateSeatBooking({
+        route: proposedRoute,
+        date: proposedDate,
+        seat: proposedSeat,
+        orderId: order.id
+      });
+      if (!checked.ok) {
+        return res.status(409).json({ success: false, error: checked.error });
+      }
+      if (Object.prototype.hasOwnProperty.call(req.body, "seat")) {
+        req.body.seat = checked.seat;
+      }
+      if (Object.prototype.hasOwnProperty.call(req.body, "travelDate")) {
+        req.body.travelDate = checked.date;
+      }
+    }
+
     const allowed = [
       "route", "service", "permissionType", "vietnamEntryDate",
       "permissionValidUntil", "priceRub", "priceVnd", "travelDate",
       "seat", "options", "medicalWarningAccepted", "passport", "currentStep"
     ];
+
+    const previousOrder = { ...order };
+
+    const previous = {
+      route: order.route,
+      travelDate: order.travelDate,
+      seat: order.seat,
+      status: order.status,
+      paymentDeadline: order.paymentDeadline,
+      lastPaymentReminderAt: order.lastPaymentReminderAt,
+      updatedAt: order.updatedAt
+    };
+
+    const oldSeat = previous.route && previous.travelDate && previous.seat
+      ? {
+          route: previous.route,
+          date: normalizeTripDate(String(previous.travelDate)),
+          seat: String(previous.seat).trim().toUpperCase()
+        }
+      : null;
 
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(req.body, key)) {
@@ -451,7 +665,83 @@ app.patch("/api/orders/:id", async (req, res) => {
 
     order.updatedAt = new Date(now).toISOString();
 
-    await writeJson(ORDERS_FILE, orders);
+    const newSeat = order.route && order.travelDate && order.seat
+      ? {
+          route: order.route,
+          date: normalizeTripDate(String(order.travelDate)),
+          seat: String(order.seat).trim().toUpperCase()
+        }
+      : null;
+
+    const seatChanged = newSeat && (
+      !oldSeat ||
+      oldSeat.route !== newSeat.route ||
+      oldSeat.date !== newSeat.date ||
+      oldSeat.seat !== newSeat.seat
+    );
+
+    let claimedNewSeat = false;
+    const needsReservation = newSeat && (
+      req.body.startPayment === true ||
+      previous.status === "awaiting_payment"
+    );
+
+    if (needsReservation && seatChanged) {
+      const claimed = await claimSeat(
+        redis, newSeat.route, newSeat.date, newSeat.seat,
+        order.id,
+        order.status === "awaiting_payment"
+          ? Math.max(1, Number(order.paymentDeadline || 0) - now)
+          : 0
+      );
+
+      if (!claimed) {
+        Object.assign(order, previousOrder);
+        return res.status(409).json({
+          success: false,
+          error: "Это место уже занято. Выберите другое."
+        });
+      }
+      claimedNewSeat = true;
+    } else if (needsReservation && newSeat && !seatChanged) {
+      const claimed = await claimSeat(
+        redis, newSeat.route, newSeat.date, newSeat.seat,
+        order.id,
+        order.status === "awaiting_payment"
+          ? Math.max(1, Number(order.paymentDeadline || 0) - now)
+          : 0
+      );
+
+      if (!claimed) {
+        Object.assign(order, previousOrder);
+        return res.status(409).json({
+          success: false,
+          error: "Не удалось подтвердить резервирование места."
+        });
+      }
+    }
+
+    try {
+      await writeJson(ORDERS_FILE, orders);
+    } catch (saveError) {
+      Object.assign(order, previousOrder);
+      if (claimedNewSeat) {
+        await releaseSeat(
+          redis, newSeat.route, newSeat.date, newSeat.seat, order.id
+        ).catch(() => {});
+      }
+      throw saveError;
+    }
+
+    const oldSeatWasRemoved = oldSeat && !newSeat;
+    if (oldSeat && (claimedNewSeat || oldSeatWasRemoved)) {
+      await releaseSeat(
+        redis, oldSeat.route, oldSeat.date, oldSeat.seat, order.id
+      ).catch(error => {
+        console.error("OLD SEAT RELEASE ERROR:", error);
+      });
+    }
+
     return res.json({ success: true, order });
   } catch (error) {
     console.error("UPDATE ORDER ERROR:", error);
@@ -504,6 +794,16 @@ app.post("/api/orders", async (req, res) => {
       });
     }
 
+    const checkedSeat = await validateSeatBooking({
+      route: order.route,
+      date: req.body.travelDate || order.travelDate,
+      seat: req.body.seat || order.seat,
+      orderId: order.id
+    });
+    if (!checkedSeat.ok) {
+      return res.status(409).json({ success: false, error: checkedSeat.error });
+    }
+
     const users = await readJson(USERS_FILE);
     const user = users.find(
       (item) => String(item.telegramId) === String(telegramId)
@@ -516,24 +816,44 @@ app.post("/api/orders", async (req, res) => {
       });
     }
 
+    // SEAT_LOCK_INTEGRATION_V1
+    const paymentDeadline = Date.now() + 20 * 60 * 1000;
+    const claimed = await claimSeat(
+      redis, order.route, checkedSeat.date, checkedSeat.seat,
+      order.id, paymentDeadline - Date.now()
+    );
+    if (!claimed) {
+      return res.status(409).json({
+        success: false,
+        error: "Это место уже забронировал другой клиент. Выберите другое."
+      });
+    }
+
     Object.assign(order, {
       permissionType: permissionType || order.permissionType || null,
       vietnamEntryDate: req.body.vietnamEntryDate || null,
       permissionValidUntil: req.body.permissionValidUntil || null,
-      travelDate: req.body.travelDate || null,
+      travelDate: checkedSeat.date,
       priceRub: req.body.priceRub ?? order.priceRub,
       priceVnd: req.body.priceVnd ?? order.priceVnd,
-      seat: req.body.seat || null,
+      seat: checkedSeat.seat,
       options: req.body.options || {},
       medicalWarningAccepted: req.body.medicalWarningAccepted === true,
       passport: user.passport,
       status: "awaiting_payment",
-      paymentDeadline: Date.now() + 20 * 60 * 1000,
+      paymentDeadline,
       lastPaymentReminderAt: null,
       updatedAt: new Date().toISOString()
     });
 
-    await writeJson(ORDERS_FILE, orders);
+    try {
+      await writeJson(ORDERS_FILE, orders);
+    } catch (saveError) {
+      await releaseSeat(
+        redis, order.route, order.travelDate, order.seat, order.id
+      ).catch(() => {});
+      throw saveError;
+    }
     await notifyAdmin(order, "awaiting_payment");
 
     return res.json({ success: true, order });
@@ -561,44 +881,150 @@ app.post(
   "/api/orders/:id/receipt",
   upload.single("receipt"),
   async (req, res) => {
-    const orders = await readJson(ORDERS_FILE);
+    let tempPath = req.file?.path;
 
-    const order = orders.find(
-      (item) => item.id === req.params.id
-    );
+    try {
+      if (!process.env.BLOB_READ_WRITE_TOKEN) {
+        return res.status(503).json({
+          success: false,
+          error: "Хранилище чеков не настроено"
+        });
+      }
 
-    if (!order) {
-      return res.status(404).json({
-        success: false
+      const telegramId = req.body.telegramId;
+
+      if (!telegramId) {
+        return res.status(401).json({
+          success: false,
+          error: "Не удалось подтвердить владельца заказа"
+        });
+      }
+
+      const orders = await readJson(ORDERS_FILE);
+      const order = orders.find(item => item.id === req.params.id);
+
+      if (!order) {
+        return res.status(404).json({ success: false });
+      }
+
+      if (String(order.telegramId) !== String(telegramId)) {
+        return res.status(403).json({
+          success: false,
+          error: "Нет доступа к заказу"
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: "Файл подтверждения не загружен"
+        });
+      }
+
+      const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "application/pdf"
+      ];
+
+      if (!allowedTypes.includes(req.file.mimetype)) {
+        return res.status(415).json({
+          success: false,
+          error: "Загрузите чек в формате JPG, PNG, WEBP или PDF"
+        });
+      }
+
+      const buffer = await fs.promises.readFile(req.file.path);
+      const extByType = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "application/pdf": "pdf"
+      };
+      const pathname =
+        `receipts/${String(order.id).replace(/[^a-zA-Z0-9_-]/g, "_")}-` +
+        `${Date.now()}.${extByType[req.file.mimetype]}`;
+
+      const blob = await put(pathname, buffer, {
+        access: "private",
+        addRandomSuffix: true,
+        contentType: req.file.mimetype,
+        token: process.env.BLOB_READ_WRITE_TOKEN
       });
-    }
 
-    if (!req.file) {
-      return res.status(400).json({
+      order.receipt = {
+        pathname: blob.pathname,
+        originalName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        uploadedAt: new Date().toISOString()
+      };
+
+      // Keep this order's seat reserved while the receipt is reviewed.
+      const claimed = await claimSeat(
+        redis, order.route, order.travelDate, order.seat, order.id, 0
+      );
+      if (!claimed) {
+        return res.status(409).json({
+          success: false,
+          error: "Не удалось закрепить место. Свяжитесь с поддержкой."
+        });
+      }
+
+      const previousStatus = order.status;
+      const previousUpdatedAt = order.updatedAt;
+      order.status = "payment_check";
+      order.updatedAt = new Date().toISOString();
+
+      try {
+        await writeJson(ORDERS_FILE, orders);
+      } catch (saveError) {
+        order.status = previousStatus;
+        order.updatedAt = previousUpdatedAt;
+
+        const remainingTtl = Math.max(
+          1,
+          Number(order.paymentDeadline || 0) - Date.now()
+        );
+
+        await claimSeat(
+          redis,
+          order.route,
+          normalizeTripDate(String(order.travelDate || "")),
+          String(order.seat || "").trim().toUpperCase(),
+          order.id,
+          remainingTtl
+        ).catch(rollbackError => {
+          console.error("RECEIPT SEAT ROLLBACK ERROR:", rollbackError);
+        });
+
+        throw saveError;
+      }
+      await notifyAdmin(order, "payment_check");
+      await notifyClient(
+        order,
+        `🧾 Чек получен и передан на проверку.\n\n` +
+        `Заказ: ${order.id}\n` +
+        `Маршрут: ${order.route || "—"}\n\n` +
+        "Мы сообщим результат проверки здесь."
+      );
+
+      return res.json({
+        success: true,
+        message: "Подтверждение оплаты отправлено на проверку"
+      });
+    } catch (error) {
+      console.error("UPLOAD RECEIPT ERROR:", error);
+      return res.status(500).json({
         success: false,
-        error: "Файл подтверждения не загружен"
+        error: "Не удалось сохранить чек. Попробуйте ещё раз."
       });
+    } finally {
+      if (tempPath) {
+        await fs.promises.unlink(tempPath).catch(() => {});
+      }
     }
-
-    order.receipt = {
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      uploadedAt: new Date().toISOString()
-    };
-
-    order.status = "payment_check";
-
-    await writeJson(ORDERS_FILE, orders);
-
-    await notifyAdmin(order, "payment_check");
-    await notifyClient(order, `🧾 Чек получен и передан на проверку.\n\nЗаказ: ${order.id}\nМаршрут: ${order.route || "—"}\n\nМы сообщим результат проверки здесь.`);
-
-    res.json({
-      success: true,
-      message: "Подтверждение оплаты отправлено на проверку"
-    });
   }
 );
 
@@ -767,56 +1193,700 @@ async function notifyClient(order, message) {
    CONFIRM PAYMENT
 ========================= */
 
-app.post("/api/orders/:id/confirm", async (req, res) => {
-  const orders = await readJson(ORDERS_FILE);
 
-  const order = orders.find(
-    (item) => item.id === req.params.id
-  );
+/* =========================
+   SCHEDULE API
+========================= */
 
-  if (!order) {
-    return res.status(404).json({
-      success: false
-    });
+const SCHEDULE_KEY = "vizaran:schedule";
+const SERVICE_SETTINGS_KEY = "vizaran:service-settings";
+const DEFAULT_SERVICE_SETTINGS = { STAMP: true, VISA: true };
+
+async function readServiceSettings() {
+  if (!redis) throw new Error("Upstash Redis is not configured");
+  const stored = await redis.get(SERVICE_SETTINGS_KEY);
+  let data = stored;
+  if (typeof data === "string") {
+    try { data = JSON.parse(data); } catch { data = null; }
   }
+  return {
+    STAMP: data?.STAMP !== false,
+    VISA: data?.VISA !== false
+  };
+}
 
-  order.status = "confirmed";
-  order.confirmedAt = new Date().toISOString();
+async function writeServiceSettings(settings) {
+  if (!redis) throw new Error("Upstash Redis is not configured");
+  const normalized = {
+    STAMP: settings.STAMP,
+    VISA: settings.VISA
+  };
+  await redis.set(SERVICE_SETTINGS_KEY, normalized);
+  return normalized;
+}
 
-  await writeJson(ORDERS_FILE, orders);
-  await notifyAdmin(order, "confirmed");
+const VIZARAN_ROUTES = [
+  "Нячанг — Лаос",
+  "Нячанг — Камбоджа",
+  "Дананг — Лаос"
+];
 
-  if (bot) {
-    try {
-      await bot.telegram.sendMessage(
-        order.telegramId,
-        `
-✅ БРОНИРОВАНИЕ ПОДТВЕРЖДЕНО
+async function readSchedule() {
+  if (!redis) throw new Error("Upstash Redis is not configured");
 
-Заказ: ${order.id}
+  const stored = await redis.get(SCHEDULE_KEY);
+  if (!stored) return { months: [], departures: [] };
 
-Маршрут:
-${order.route}
-
-Услуга:
-${order.service}
-
-Место:
-${order.seat}
-
-Оплата принята.
-
-Мы свяжемся с вами для дальнейших инструкций по поездке.
-`
-      );
-    } catch (error) {
-      console.error(error.message);
+  let data = stored;
+  if (typeof data === "string") {
+    try { data = JSON.parse(data); } catch {
+      return { months: [], departures: [] };
     }
   }
 
-  res.json({
-    success: true
-  });
+  return {
+    months: Array.isArray(data?.months) ? data.months : [],
+    departures: Array.isArray(data?.departures) ? data.departures : []
+  };
+}
+
+async function writeSchedule(schedule) {
+  if (!redis) throw new Error("Upstash Redis is not configured");
+  await redis.set(SCHEDULE_KEY, schedule);
+}
+
+function normalizeTripDate(value) {
+  if (typeof value !== "string") return "";
+  const v = value.trim();
+
+  if (/^\d{2}\.\d{2}\.\d{4}$/.test(v)) return v;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const [year, month, day] = v.split("-");
+    return `${day}.${month}.${year}`;
+  }
+
+  return "";
+}
+
+function normalizeMonth(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}$/.test(value)) return "";
+  const [year, month] = value.split("-").map(Number);
+  if (month < 1 || month > 12 || year < 2020 || year > 2100) return "";
+  return value;
+}
+
+app.get("/api/schedule", async (req, res) => {
+  try {
+    const route = String(req.query.route || "");
+    const month = normalizeMonth(String(req.query.month || ""));
+
+    if (!VIZARAN_ROUTES.includes(route) || !month) {
+      return res.status(400).json({
+        success: false,
+        error: "Не указан корректный маршрут или месяц"
+      });
+    }
+
+    const schedule = await readSchedule();
+    const monthEntry = schedule.months.find(
+      item => item.route === route && item.month === month
+    );
+
+    const departures = schedule.departures
+      .filter(item =>
+        item.route === route &&
+        normalizeTripDate(item.date)?.split(".").slice(1).join(".") ===
+          month.split("-").reverse().join(".") &&
+        item.open === true
+      )
+      .map(item => ({
+        date: normalizeTripDate(item.date),
+        open: true
+      }));
+
+    return res.json({
+      success: true,
+      route,
+      month,
+      monthOpen: monthEntry?.open === true,
+      departures: monthEntry?.open === true ? departures : []
+    });
+  } catch (error) {
+    console.error("PUBLIC SCHEDULE ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось загрузить расписание"
+    });
+  }
+});
+
+async function validateSeatBooking({ route, date, seat, orderId }) {
+  const normalizedDate = normalizeTripDate(String(date || ""));
+  if (!VIZARAN_ROUTES.includes(String(route || "")) || !normalizedDate || !seat) {
+    return { ok: false, error: "Выберите маршрут, дату и место" };
+  }
+
+  const schedule = await readSchedule();
+  const month = normalizedDate.split(".").reverse().join("-").slice(0, 7);
+  const monthEntry = schedule.months.find(
+    item => item.route === route && item.month === month
+  );
+  const departure = schedule.departures.find(
+    item => item.route === route &&
+      normalizeTripDate(item.date) === normalizedDate &&
+      item.open === true
+  );
+
+  if (monthEntry?.open !== true || !departure) {
+    return { ok: false, error: "Этот рейс закрыт для бронирования" };
+  }
+
+  const seatName = String(seat).trim().toUpperCase();
+  const validSeats = new Set(
+    Array.from({ length: 16 }, (_, i) => [`${i + 1}A`, `${i + 1}B`]).flat()
+  );
+  if (!validSeats.has(seatName)) {
+    return { ok: false, error: "Выбрано некорректное место" };
+  }
+
+  if ((departure.disabledSeats || []).map(x => String(x).toUpperCase()).includes(seatName)) {
+    return { ok: false, error: "Это место отключено. Выберите другое." };
+  }
+
+  const orders = await readJson(ORDERS_FILE);
+  const now = Date.now();
+  const occupied = orders.some(order =>
+    order.id !== orderId &&
+    order.route === route &&
+    normalizeTripDate(order.travelDate) === normalizedDate &&
+    String(order.seat || "").trim().toUpperCase() === seatName &&
+    (
+      ["payment_check", "confirmed"].includes(order.status) ||
+      (order.status === "awaiting_payment" &&
+        Number(order.paymentDeadline || 0) > now)
+    )
+  );
+
+  if (occupied) {
+    return { ok: false, error: "Это место уже занято. Выберите другое." };
+  }
+
+  return { ok: true, route, date: normalizedDate, seat: seatName };
+}
+
+app.get("/api/schedule/seats", async (req, res) => {
+  try {
+    const route = String(req.query.route || "");
+    const date = normalizeTripDate(String(req.query.date || ""));
+
+    if (!VIZARAN_ROUTES.includes(route) || !date) {
+      return res.status(400).json({
+        success: false,
+        error: "Не указан корректный маршрут или дата"
+      });
+    }
+
+    const [schedule, orders] = await Promise.all([
+      readSchedule(),
+      readJson(ORDERS_FILE)
+    ]);
+
+    const departure = schedule.departures.find(
+      item => item.route === route &&
+        normalizeTripDate(item.date) === date &&
+        item.open === true
+    );
+
+    const now = Date.now();
+    const bookedSeats = [...new Set(
+      orders
+        .filter(order =>
+          order.route === route &&
+          normalizeTripDate(order.travelDate) === date &&
+          order.seat &&
+          (
+            ["payment_check", "confirmed"].includes(order.status) ||
+            (order.status === "awaiting_payment" &&
+              Number(order.paymentDeadline || 0) > now)
+          )
+        )
+        .map(order => String(order.seat))
+    )];
+
+    const allSeats = Array.from(
+      { length: 16 },
+      (_, i) => [`${i + 1}A`, `${i + 1}B`]
+    ).flat();
+
+    const lockValues = redis
+      ? await Promise.all(
+          allSeats.map(seat =>
+            redis.get(seatLockKey(route, date, seat))
+          )
+        )
+      : [];
+
+    const lockedSeats = redis
+      ? allSeats.filter((seat, i) =>
+          lockValues[i] !== null &&
+          lockValues[i] !== undefined &&
+          String(lockValues[i]) !== ""
+        )
+      : [];
+
+    const finalBookedSeats = [...new Set([
+      ...bookedSeats.map(seat => String(seat).trim().toUpperCase()),
+      ...lockedSeats
+    ])];
+
+    return res.json({
+      success: true,
+      route,
+      date,
+      available: Boolean(departure),
+      bookedSeats: finalBookedSeats,
+      disabledSeats: Array.isArray(departure?.disabledSeats)
+        ? departure.disabledSeats
+        : []
+    });
+  } catch (error) {
+    console.error("PUBLIC SEAT AVAILABILITY ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось загрузить занятость мест"
+    });
+  }
+});
+
+app.get("/api/service-settings", async (req, res) => {
+  try {
+    return res.json({ success: true, settings: await readServiceSettings() });
+  } catch (error) {
+    console.error("SERVICE SETTINGS READ ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось загрузить доступность услуг"
+    });
+  }
+});
+
+app.get("/api/admin/service-settings", async (req, res) => {
+  try {
+    if (!await requireAdmin(req)) {
+      return res.status(403).json({ success: false, error: "Доступ запрещён" });
+    }
+    return res.json({ success: true, settings: await readServiceSettings() });
+  } catch (error) {
+    console.error("ADMIN SERVICE SETTINGS READ ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось загрузить настройки услуг"
+    });
+  }
+});
+
+app.put("/api/admin/service-settings", async (req, res) => {
+  try {
+    if (!await requireAdmin(req)) {
+      return res.status(403).json({ success: false, error: "Доступ запрещён" });
+    }
+    const input = req.body?.settings;
+    if (!input || typeof input.STAMP !== "boolean" || typeof input.VISA !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        error: "Укажите доступность обеих услуг"
+      });
+    }
+    const settings = await writeServiceSettings(input);
+    return res.json({ success: true, settings });
+  } catch (error) {
+    console.error("ADMIN SERVICE SETTINGS WRITE ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось сохранить настройки услуг"
+    });
+  }
+});
+
+app.get("/api/admin/schedule", async (req, res) => {
+  try {
+    const admin = await requireAdmin(req);
+    if (!admin) {
+      return res.status(403).json({
+        success: false,
+        error: "Доступ запрещён"
+      });
+    }
+
+    return res.json({ success: true, schedule: await readSchedule() });
+  } catch (error) {
+    console.error("ADMIN SCHEDULE READ ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось загрузить расписание"
+    });
+  }
+});
+
+app.put("/api/admin/schedule", async (req, res) => {
+  try {
+    const admin = await requireAdmin(req);
+    if (!admin) {
+      return res.status(403).json({
+        success: false,
+        error: "Доступ запрещён"
+      });
+    }
+
+    const input = req.body?.schedule;
+    if (!input || !Array.isArray(input.months) ||
+        !Array.isArray(input.departures)) {
+      return res.status(400).json({
+        success: false,
+        error: "Неверный формат расписания"
+      });
+    }
+
+    const months = [];
+    for (const item of input.months) {
+      const month = normalizeMonth(item?.month);
+      if (!VIZARAN_ROUTES.includes(item?.route) || !month ||
+          typeof item.open !== "boolean") {
+        return res.status(400).json({
+          success: false,
+          error: "Проверьте настройки маршрутов и месяцев"
+        });
+      }
+      months.push({
+        route: item.route,
+        month,
+        open: item.open
+      });
+    }
+
+    const departures = [];
+    for (const item of input.departures) {
+      const date = normalizeTripDate(item?.date);
+      if (!VIZARAN_ROUTES.includes(item?.route) || !date ||
+          typeof item.open !== "boolean") {
+        return res.status(400).json({
+          success: false,
+          error: "Проверьте даты и маршруты рейсов"
+        });
+      }
+
+      const disabledSeats = Array.isArray(item.disabledSeats)
+        ? [...new Set(item.disabledSeats.map(String).filter(seat =>
+            /^(?:[1-9]|1[0-6])[AB]$/.test(seat)
+          ))]
+        : [];
+
+      departures.push({
+        route: item.route,
+        date,
+        open: item.open,
+        disabledSeats
+      });
+    }
+
+    const uniqueMonths = new Set(months.map(x => `${x.route}|${x.month}`));
+    const uniqueDepartures = new Set(departures.map(x => `${x.route}|${x.date}`));
+
+    if (uniqueMonths.size !== months.length ||
+        uniqueDepartures.size !== departures.length) {
+      return res.status(400).json({
+        success: false,
+        error: "В расписании есть повторяющиеся месяцы или даты"
+      });
+    }
+
+    const schedule = { months, departures };
+    await writeSchedule(schedule);
+
+    return res.json({ success: true, schedule });
+  } catch (error) {
+    console.error("ADMIN SCHEDULE WRITE ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось сохранить расписание"
+    });
+  }
+});
+
+app.get("/api/admin/orders", async (req, res) => {
+  try {
+    const admin = await requireAdmin(req);
+
+    if (!admin) {
+      return res.status(403).json({
+        success: false,
+        error: "Доступ запрещён"
+      });
+    }
+
+    const orders = await readJson(ORDERS_FILE);
+
+    return res.json({
+      success: true,
+      orders: orders
+        .filter((order) => [
+          "awaiting_payment",
+          "payment_check",
+          "confirmed",
+          "cancelled"
+        ].includes(order.status))
+        .sort((a, b) =>
+          String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""))
+        )
+    });
+  } catch (error) {
+    console.error("ADMIN ORDERS ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось загрузить заказы"
+    });
+  }
+});
+
+app.get("/api/admin/orders/:id/receipt", async (req, res) => {
+  try {
+    const admin = await requireAdmin(req);
+    if (!admin) {
+      return res.status(403).json({
+        success: false,
+        error: "Доступ запрещён"
+      });
+    }
+
+    const orders = await readJson(ORDERS_FILE);
+    const order = orders.find(item => item.id === req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, error: "Заказ не найден" });
+    }
+
+    if (!order.receipt?.pathname) {
+      return res.status(404).json({
+        success: false,
+        error: "Файл этого чека отсутствует в приватном хранилище"
+      });
+    }
+
+    const result = await get(order.receipt.pathname, {
+      access: "private",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      useCache: false
+    });
+
+    if (!result || result.statusCode !== 200 || !result.stream) {
+      return res.status(404).json({
+        success: false,
+        error: "Файл чека не найден"
+      });
+    }
+
+    const contentType = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "application/pdf"
+    ].includes(result.blob.contentType)
+      ? result.blob.contentType
+      : "application/octet-stream";
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Cache-Control", "private, no-store, max-age=0");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+
+    Readable.fromWeb(result.stream).pipe(res);
+  } catch (error) {
+    console.error("ADMIN RECEIPT VIEW ERROR:", error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: "Не удалось открыть чек"
+      });
+    } else {
+      res.destroy(error);
+    }
+  }
+});
+
+app.post("/api/orders/:id/confirm", async (req, res) => {
+  try {
+    const admin = await requireAdmin(req);
+
+    if (!admin) {
+      return res.status(403).json({
+        success: false,
+        error: "Доступ запрещён"
+      });
+    }
+
+    const orders = await readJson(ORDERS_FILE);
+    const order = orders.find((item) => item.id === req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false });
+    }
+
+    if (order.status !== "payment_check") {
+      return res.status(409).json({
+        success: false,
+        error: "Заказ не ожидает проверки оплаты"
+      });
+    }
+
+    const confirmedSeat = await claimSeat(
+      redis,
+      order.route,
+      normalizeTripDate(String(order.travelDate || "")),
+      String(order.seat || "").trim().toUpperCase(),
+      order.id,
+      0
+    );
+
+    if (!confirmedSeat) {
+      return res.status(409).json({
+        success: false,
+        error: "Не удалось закрепить место за заказом. Проверьте доступность места."
+      });
+    }
+
+    const previousConfirmState = {
+      status: order.status,
+      confirmedAt: order.confirmedAt,
+      updatedAt: order.updatedAt
+    };
+
+    order.status = "confirmed";
+    order.confirmedAt = new Date().toISOString();
+    order.updatedAt = new Date().toISOString();
+
+    try {
+      await writeJson(ORDERS_FILE, orders);
+    } catch (saveError) {
+      Object.assign(order, previousConfirmState);
+      await claimSeat(
+        redis,
+        order.route,
+        normalizeTripDate(String(order.travelDate || "")),
+        String(order.seat || "").trim().toUpperCase(),
+        order.id,
+        0
+      ).catch(() => {});
+      throw saveError;
+    }
+    await notifyAdmin(order, "confirmed");
+    await notifyClient(
+      order,
+      `✅ БРОНИРОВАНИЕ ПОДТВЕРЖДЕНО\n\n` +
+      `Заказ: ${order.id}\n` +
+      `Маршрут: ${order.route || "—"}\n` +
+      `Услуга: ${order.service || "—"}\n` +
+      `Место: ${order.seat || "—"}\n\n` +
+      "Оплата принята. Мы свяжемся с вами для дальнейших инструкций."
+    );
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("CONFIRM PAYMENT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось подтвердить оплату"
+    });
+  }
+});
+
+app.post("/api/orders/:id/reject", async (req, res) => {
+  try {
+    const admin = await requireAdmin(req);
+
+    if (!admin) {
+      return res.status(403).json({
+        success: false,
+        error: "Доступ запрещён"
+      });
+    }
+
+    const orders = await readJson(ORDERS_FILE);
+    const order = orders.find((item) => item.id === req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false });
+    }
+
+    if (order.status !== "payment_check") {
+      return res.status(409).json({
+        success: false,
+        error: "Заказ не ожидает проверки оплаты"
+      });
+    }
+
+    const retryDeadline = Date.now() + 20 * 60 * 1000;
+    const retrySeat = await claimSeat(
+      redis,
+      order.route,
+      normalizeTripDate(String(order.travelDate || "")),
+      String(order.seat || "").trim().toUpperCase(),
+      order.id,
+      20 * 60 * 1000
+    );
+
+    if (!retrySeat) {
+      return res.status(409).json({
+        success: false,
+        error: "Место больше не закреплено за этим заказом. Свяжитесь с поддержкой."
+      });
+    }
+
+    const previousRejectState = {
+      status: order.status,
+      paymentDeadline: order.paymentDeadline,
+      receiptRejectedAt: order.receiptRejectedAt,
+      receiptRejectionReason: order.receiptRejectionReason,
+      updatedAt: order.updatedAt
+    };
+
+    order.status = "awaiting_payment";
+    order.paymentDeadline = retryDeadline;
+    order.lastPaymentReminderAt = null;
+    order.receiptRejectedAt = new Date().toISOString();
+    order.receiptRejectionReason = String(req.body?.reason || "")
+      .trim()
+      .slice(0, 500);
+    order.updatedAt = new Date().toISOString();
+
+    try {
+      await writeJson(ORDERS_FILE, orders);
+    } catch (saveError) {
+      Object.assign(order, previousRejectState);
+      await claimSeat(
+        redis,
+        order.route,
+        normalizeTripDate(String(order.travelDate || "")),
+        String(order.seat || "").trim().toUpperCase(),
+        order.id,
+        0
+      ).catch(() => {});
+      throw saveError;
+    }
+    await notifyClient(
+      order,
+      `⚠️ Чек по заказу ${order.id} не подтверждён.\n` +
+      `${order.receiptRejectionReason || "Пожалуйста, проверьте чек и отправьте его повторно."}`
+    );
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("REJECT RECEIPT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось отклонить чек"
+    });
+  }
 });
 
 /* =========================
@@ -824,18 +1894,40 @@ ${order.seat}
 ========================= */
 
 app.get("/api/orders/user/:telegramId", async (req, res) => {
-  const orders = await readJson(ORDERS_FILE);
+  try {
+    const initData = req.get("x-telegram-init-data");
+    const telegramUser = validateTelegramInitData(initData);
 
-  const userOrders = orders.filter(
-    (item) =>
-      String(item.telegramId) ===
-      String(req.params.telegramId)
-  );
+    if (!telegramUser) {
+      return res.status(401).json({
+        success: false,
+        error: "Необходимо подтвердить авторизацию Telegram"
+      });
+    }
 
-  res.json({
-    success: true,
-    orders: userOrders
-  });
+    if (String(telegramUser.id) !== String(req.params.telegramId)) {
+      return res.status(403).json({
+        success: false,
+        error: "Нет доступа к бронированиям другого пользователя"
+      });
+    }
+
+    const orders = await readJson(ORDERS_FILE);
+    const userOrders = orders.filter(
+      (item) => String(item.telegramId) === String(telegramUser.id)
+    );
+
+    return res.json({
+      success: true,
+      orders: userOrders
+    });
+  } catch (error) {
+    console.error("GET USER ORDERS ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Не удалось загрузить бронирования"
+    });
+  }
 });
 
 /* =========================
@@ -1148,6 +2240,16 @@ app.get("/api/cron/orders", async (req, res) => {
         const expiresAt = Number(order.draftExpiresAt || 0);
 
         if (expiresAt && now >= expiresAt) {
+          if (order.route && order.travelDate && order.seat) {
+            await releaseSeat(
+              redis,
+              order.route,
+              normalizeTripDate(String(order.travelDate)),
+              String(order.seat).trim().toUpperCase(),
+              order.id
+            );
+          }
+
           order.status = "cancelled";
           order.cancelledAt = new Date(now).toISOString();
           order.cancelReason = "draft_expired";
@@ -1188,6 +2290,16 @@ app.get("/api/cron/orders", async (req, res) => {
         const deadline = Number(order.paymentDeadline || 0);
 
         if (deadline && now >= deadline) {
+          if (order.route && order.travelDate && order.seat) {
+            await releaseSeat(
+              redis,
+              order.route,
+              normalizeTripDate(String(order.travelDate)),
+              String(order.seat).trim().toUpperCase(),
+              order.id
+            );
+          }
+
           order.status = "cancelled";
           order.cancelledAt = new Date(now).toISOString();
           order.cancelReason = "payment_timeout";
