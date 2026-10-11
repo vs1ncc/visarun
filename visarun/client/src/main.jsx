@@ -1020,7 +1020,7 @@ function App() {
 
 function TransitionLottie({ animationData }) {
   const lottie = useLottie({
-    animationData,
+    src: animationData,
     autoplay: true,
     loop: true,
   });
