@@ -1483,9 +1483,10 @@ function PermissionSelection({
 
   return (
     <div className="passport-page">
-      <BackButton onClick={onBack} />
-
-      <h1>Виза/Штамп</h1>
+      <div className="passport-page-header">
+        <BackButton onClick={onBack} />
+        <h1>Виза/Штамп</h1>
+      </div>
       <p className="subtitle">Укажите данные разрешения на пребывание во Вьетнаме</p>
 
       <section className="passenger-block">
