@@ -7772,3 +7772,9 @@ body:has(.vizaran-options-page) .app {
   width: min(45.6vw, 216px);
   height: min(45.6vw, 216px);
 }
+
+/* VISA/STAMP — move permission section and continue button up by 20px */
+.passport-page > .passenger-block,
+.passport-page > .vizaran-calendar-submit {
+  transform: translateY(-20px);
+}
