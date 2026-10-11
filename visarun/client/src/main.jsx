@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Lottie } from "lottie-react";
+import { useLottie, LottieDisplay } from "lottie-react";
 import "./styles.css";
 
 const tg = window.Telegram?.WebApp;
@@ -1005,12 +1005,7 @@ function App() {
       {screenLoading && (
         <div className="lottie-transition-overlay" role="status" aria-label="Загрузка">
           {loaderAnimation && (
-            <Lottie
-              animationData={loaderAnimation}
-              loop
-              autoplay
-              className="lottie-transition-animation"
-            />
+            <TransitionLottie animationData={loaderAnimation} />
           )}
         </div>
       )}
@@ -1022,6 +1017,21 @@ function App() {
 /* =========================
    HOME
 ========================= */
+
+function TransitionLottie({ animationData }) {
+  const lottie = useLottie({
+    animationData,
+    autoplay: true,
+    loop: true,
+  });
+
+  return (
+    <LottieDisplay
+      lottie={lottie}
+      className="lottie-transition-animation"
+    />
+  );
+}
 
 function Home({ onRoute, user }) {
   const scrollToDirections = () => {
