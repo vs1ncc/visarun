@@ -7736,6 +7736,6 @@ body:has(.vizaran-options-page) .app {
 }
 
 .lottie-transition-animation {
-  width: min(76vw, 360px);
-  height: min(76vw, 360px);
+  width: min(45.6vw, 216px);
+  height: min(45.6vw, 216px);
 }
