@@ -3645,6 +3645,13 @@ function BottomBar({
 }) {
   return (
     <nav className="bottom-bar">
+      <span
+        className={`bottom-bar-indicator ${
+          screen === "bookings" ? "is-bookings" :
+          screen === "profile" ? "is-profile" : "is-home"
+        }`}
+        aria-hidden="true"
+      />
 
       <button
         className={
