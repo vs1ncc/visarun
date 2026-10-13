@@ -625,10 +625,10 @@ function App() {
     setScreen("terms", true);
   }
 
-  const [legalReturnScreen, setLegalReturnScreen] = useState("profile");
+  const legalReturnScreenRef = useRef("profile");
 
   function openLegalDocument(documentScreen) {
-    setLegalReturnScreen(screen);
+    legalReturnScreenRef.current = screen;
     setScreen(documentScreen, true);
   }
 
@@ -1022,7 +1022,7 @@ function App() {
           <LegalPage
             title="Политика обработки персональных данных"
             url={`${API}/legal/privacy`}
-            onBack={() => setScreen(legalReturnScreen, true)}
+            onBack={() => setScreen(legalReturnScreenRef.current)}
           />
         )}
 
@@ -1030,7 +1030,7 @@ function App() {
           <LegalPage
             title="Условия сервиса"
             url={`${API}/legal/terms`}
-            onBack={() => setScreen(legalReturnScreen, true)}
+            onBack={() => setScreen(legalReturnScreenRef.current)}
           />
         )}
 
@@ -1038,7 +1038,7 @@ function App() {
           <LegalPage
             title="Согласие на обработку персональных данных"
             url={`${API}/legal/consent`}
-            onBack={() => setScreen(legalReturnScreen, true)}
+            onBack={() => setScreen(legalReturnScreenRef.current)}
           />
         )}
 
@@ -1046,7 +1046,7 @@ function App() {
           <LegalPage
             title="Правила бронирования, отмены и возврата"
             url={`${API}/legal/refunds`}
-            onBack={() => setScreen(legalReturnScreen, true)}
+            onBack={() => setScreen(legalReturnScreenRef.current)}
           />
         )}
 
@@ -1054,7 +1054,7 @@ function App() {
           <LegalPage
             title="Договор-оферта"
             url={`${API}/legal/offer`}
-            onBack={() => setScreen(legalReturnScreen, true)}
+            onBack={() => setScreen(legalReturnScreenRef.current)}
           />
         )}
 
@@ -1062,7 +1062,7 @@ function App() {
           <LegalPage
             title="Риски пересечения государственной границы"
             url={`${API}/legal/border-risks`}
-            onBack={() => setScreen(legalReturnScreen, true)}
+            onBack={() => setScreen(legalReturnScreenRef.current)}
           />
         )}
 
