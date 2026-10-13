@@ -625,7 +625,10 @@ function App() {
     setScreen("terms", true);
   }
 
+  const [legalReturnScreen, setLegalReturnScreen] = useState("profile");
+
   function openLegalDocument(documentScreen) {
+    setLegalReturnScreen(screen);
     setScreen(documentScreen, true);
   }
 
@@ -1019,7 +1022,7 @@ function App() {
           <LegalPage
             title="Политика обработки персональных данных"
             url={`${API}/legal/privacy`}
-            onBack={() => setScreen("profile")}
+            onBack={() => setScreen(legalReturnScreen, true)}
           />
         )}
 
@@ -1027,7 +1030,7 @@ function App() {
           <LegalPage
             title="Условия сервиса"
             url={`${API}/legal/terms`}
-            onBack={() => setScreen("profile")}
+            onBack={() => setScreen(legalReturnScreen, true)}
           />
         )}
 
@@ -1035,7 +1038,7 @@ function App() {
           <LegalPage
             title="Согласие на обработку персональных данных"
             url={`${API}/legal/consent`}
-            onBack={() => setScreen("profile")}
+            onBack={() => setScreen(legalReturnScreen, true)}
           />
         )}
 
@@ -1043,7 +1046,7 @@ function App() {
           <LegalPage
             title="Правила бронирования, отмены и возврата"
             url={`${API}/legal/refunds`}
-            onBack={() => setScreen("profile")}
+            onBack={() => setScreen(legalReturnScreen, true)}
           />
         )}
 
@@ -1051,7 +1054,7 @@ function App() {
           <LegalPage
             title="Договор-оферта"
             url={`${API}/legal/offer`}
-            onBack={() => setScreen("profile")}
+            onBack={() => setScreen(legalReturnScreen, true)}
           />
         )}
 
@@ -1059,7 +1062,7 @@ function App() {
           <LegalPage
             title="Риски пересечения государственной границы"
             url={`${API}/legal/border-risks`}
-            onBack={() => setScreen("profile")}
+            onBack={() => setScreen(legalReturnScreen, true)}
           />
         )}
 
