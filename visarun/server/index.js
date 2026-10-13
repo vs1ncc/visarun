@@ -1946,10 +1946,13 @@ const privacyText = `
 
 Оператор персональных данных:
 ООО «Фесто»
+Оператор: ${process.env.COMPANY_NAME}
 ИНН: ${process.env.COMPANY_INN}
 ОГРН: ${process.env.COMPANY_OGRN}
 Адрес: ${process.env.COMPANY_ADDRESS}
 Email: ${process.env.COMPANY_EMAIL}
+Телефон: ${process.env.COMPANY_PHONE || "—"}
+Telegram: ${process.env.COMPANY_TELEGRAM || "—"}
 
 Политика описывает обработку персональных данных при использовании сервиса бронирования поездок и Telegram Mini App.
 
@@ -2125,10 +2128,13 @@ ${process.env.COMPANY_EMAIL}
 17. РЕКВИЗИТЫ ОПЕРАТОРА
 
 ООО «Фесто»
+Оператор: ${process.env.COMPANY_NAME}
 ИНН: ${process.env.COMPANY_INN}
 ОГРН: ${process.env.COMPANY_OGRN}
 Адрес: ${process.env.COMPANY_ADDRESS}
 Email: ${process.env.COMPANY_EMAIL}
+Телефон: ${process.env.COMPANY_PHONE || "—"}
+Telegram: ${process.env.COMPANY_TELEGRAM || "—"}
 
 18. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ
 
@@ -2160,12 +2166,13 @@ const consentText = `
 
 Данные обрабатываются в течение срока, необходимого для указанных целей, с учётом обязательных сроков хранения, установленных законом. Согласие может быть отозвано обращением на адрес ${process.env.COMPANY_EMAIL}. Отзыв не отменяет обработку, для которой существуют иные законные основания.
 
-Оператор:
-ООО «Фесто»
+Оператор: ${process.env.COMPANY_NAME}
 ИНН: ${process.env.COMPANY_INN}
 ОГРН: ${process.env.COMPANY_OGRN}
 Адрес: ${process.env.COMPANY_ADDRESS}
 Email: ${process.env.COMPANY_EMAIL}
+Телефон: ${process.env.COMPANY_PHONE || "—"}
+Telegram: ${process.env.COMPANY_TELEGRAM || "—"}
 
 Настоящий текст предназначен для отдельного подтверждения пользователем. Само по себе использование сервиса не считается подтверждением этого согласия.
 `;
@@ -2194,12 +2201,13 @@ const refundRulesText = `
 5. ОБЯЗАТЕЛЬНЫЕ ПРАВА ПОТРЕБИТЕЛЯ
 Настоящие правила не ограничивают права потребителя, предоставленные императивными нормами законодательства Российской Федерации, включая право отказаться от договора оказания услуг в случаях и порядке, предусмотренных законом. Условия о возврате применяются с учётом фактически понесённых расходов и иных обязательных требований законодательства.
 
-Оператор:
-ООО «Фесто»
+Оператор: ${process.env.COMPANY_NAME}
 ИНН: ${process.env.COMPANY_INN}
 ОГРН: ${process.env.COMPANY_OGRN}
 Адрес: ${process.env.COMPANY_ADDRESS}
 Email: ${process.env.COMPANY_EMAIL}
+Телефон: ${process.env.COMPANY_PHONE || "—"}
+Telegram: ${process.env.COMPANY_TELEGRAM || "—"}
 `;
 
 const offerText = `
@@ -2236,10 +2244,13 @@ const offerText = `
 
 10. РЕКВИЗИТЫ ИСПОЛНИТЕЛЯ
 ООО «Фесто»
+Оператор: ${process.env.COMPANY_NAME}
 ИНН: ${process.env.COMPANY_INN}
 ОГРН: ${process.env.COMPANY_OGRN}
 Адрес: ${process.env.COMPANY_ADDRESS}
 Email: ${process.env.COMPANY_EMAIL}
+Телефон: ${process.env.COMPANY_PHONE || "—"}
+Telegram: ${process.env.COMPANY_TELEGRAM || "—"}
 
 Настоящий текст необходимо применять с учётом фактической схемы получения платежей и исполнения поездок.
 `;
@@ -2267,12 +2278,13 @@ const borderRisksText = `
 6. ОТВЕТСТВЕННОСТЬ
 Настоящее уведомление не освобождает исполнителя от обязательств по договору и не ограничивает права потребителя, предусмотренные законом.
 
-Оператор:
-ООО «Фесто»
+Оператор: ${process.env.COMPANY_NAME}
 ИНН: ${process.env.COMPANY_INN}
 ОГРН: ${process.env.COMPANY_OGRN}
 Адрес: ${process.env.COMPANY_ADDRESS}
 Email: ${process.env.COMPANY_EMAIL}
+Телефон: ${process.env.COMPANY_PHONE || "—"}
+Telegram: ${process.env.COMPANY_TELEGRAM || "—"}
 `;
 
 app.get("/api/legal/consent", async (req, res) => {
