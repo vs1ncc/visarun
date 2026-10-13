@@ -618,11 +618,11 @@ function App() {
   }
 
   function openPrivacy() {
-    setScreen("privacy", true);
+    openLegalDocument("privacy");
   }
 
   function openTerms() {
-    setScreen("terms", true);
+    openLegalDocument("terms");
   }
 
   const legalReturnScreenRef = useRef("profile");
