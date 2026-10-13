@@ -628,7 +628,10 @@ function App() {
   const legalReturnScreenRef = useRef("profile");
 
   function openLegalDocument(documentScreen) {
-    legalReturnScreenRef.current = screen;
+    legalReturnScreenRef.current =
+      documentScreen === "consent" && screen === "passport"
+        ? "passport"
+        : screen;
     setScreen(documentScreen, true);
   }
 
@@ -1038,7 +1041,7 @@ function App() {
           <LegalPage
             title="Согласие на обработку персональных данных"
             url={`${API}/legal/consent`}
-            onBack={() => setScreen(legalReturnScreenRef.current)}
+            onBack={() => setScreen("passport")}
           />
         )}
 
