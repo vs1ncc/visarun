@@ -7793,3 +7793,568 @@ body:has(.vizaran-options-page) .app {
 .passport-page-content > .vizaran-calendar-submit {
   transform: translateY(-20px);
 }
+
+/* VISA/STAMP — disable page scrolling only on permission selection */
+body:has(.passport-page-content) {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+body:has(.passport-page-content) .app,
+body:has(.passport-page-content) .content {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+/* VISA/STAMP — disable scrolling only on the permission selection page */
+body:has(.passport-page-content) {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+body:has(.passport-page-content) .app,
+body:has(.passport-page-content) .content {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+/* BOOKINGS — unified booking card layout */
+.bookings-page {
+  min-width: 0;
+}
+
+.bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.bookings-page .booking-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.055),
+    rgba(255, 255, 255, 0.018)
+  );
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.bookings-page .booking-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 14px;
+}
+
+.bookings-page .booking-route-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 5px 9px;
+  border: 1px solid rgba(192, 132, 252, 0.24);
+  border-radius: 8px;
+  background: rgba(168, 85, 247, 0.12);
+  color: #d8b4fe;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 1.2px;
+  line-height: 1.2;
+}
+
+.bookings-page .booking-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text-2, #e5e5e5);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.bookings-page .booking-card > h3 {
+  min-width: 0;
+  margin: 0 0 14px;
+  color: var(--text, #fff);
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.3;
+  letter-spacing: -0.35px;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.bookings-page .booking-info-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 11px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.065);
+}
+
+.bookings-page .booking-info-row > span {
+  min-width: 0;
+  color: var(--muted, #a1a1aa);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.bookings-page .booking-info-row > strong {
+  min-width: 0;
+  color: var(--text-2, #e5e5e5);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+  text-align: right;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.bookings-page .booking-info-row:last-of-type > strong {
+  color: #d8b4fe;
+}
+
+.bookings-page .booking-card > .primary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  border-radius: 13px;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 360px) {
+  .bookings-page .booking-card {
+    padding: 14px;
+    border-radius: 17px;
+  }
+
+  .bookings-page .booking-card > h3 {
+    font-size: 16px;
+  }
+
+  .bookings-page .booking-info-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .bookings-page .booking-info-row > span,
+  .bookings-page .booking-info-row > strong {
+    font-size: 11px;
+  }
+}
+
+/* BOOKING DETAILS */
+.booking-detail-page {
+  min-width: 0;
+  padding-bottom: 28px;
+}
+
+.booking-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  margin: 0 0 18px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #f4f0fa;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.booking-detail-back span {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.booking-open-button {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.booking-detail-card {
+  min-width: 0;
+  margin: 0 0 14px;
+  padding: 17px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.055),
+    rgba(255, 255, 255, 0.018)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.booking-detail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 16px;
+}
+
+.booking-detail-number {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(168, 85, 247, 0.09);
+}
+
+.booking-detail-number span {
+  color: #b8b0c5;
+  font-size: 11px;
+}
+
+.booking-detail-number strong {
+  color: #e9d5ff;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.booking-detail-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.065);
+}
+
+.booking-detail-row > span {
+  min-width: 0;
+  color: #a7a1b2;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.booking-detail-row > strong {
+  min-width: 0;
+  color: #f4f0fa;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: right;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.booking-detail-card > h2 {
+  margin: 0 0 12px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.booking-detail-nested {
+  margin-top: 10px;
+}
+
+.booking-detail-nested h4,
+.booking-detail-passenger h3 {
+  margin: 10px 0 4px;
+  color: #d8b4fe;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.booking-detail-passenger + .booking-detail-passenger {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 360px) {
+  .booking-detail-card {
+    padding: 14px;
+    border-radius: 17px;
+  }
+
+  .booking-detail-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .booking-detail-row > span,
+  .booking-detail-row > strong {
+    font-size: 11px;
+  }
+}
+
+/* Passenger birth date picker: year -> month -> day */
+.birth-picker {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.birth-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #f5f1fa;
+  font: inherit;
+  text-align: left;
+}
+
+.birth-picker-trigger span {
+  overflow-wrap: anywhere;
+}
+
+.birth-picker-trigger svg {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  color: #c084fc;
+}
+
+.birth-picker-popover {
+  position: relative;
+  z-index: 20;
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px;
+  border: 1px solid rgba(192, 132, 252, 0.24);
+  border-radius: 17px;
+  background: #17131f;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.38);
+  box-sizing: border-box;
+}
+
+.birth-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.birth-picker-header strong {
+  color: #f5f1fa;
+  font-size: 14px;
+  text-align: center;
+}
+
+.birth-picker-header > button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(168, 85, 247, 0.13);
+  color: #e9d5ff;
+  font-size: 25px;
+}
+
+.birth-picker-header-spacer {
+  width: 36px;
+}
+
+.birth-picker-years,
+.birth-picker-months {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.birth-picker-years button,
+.birth-picker-months button,
+.birth-picker-days button {
+  min-width: 0;
+  min-height: 39px;
+  padding: 6px 3px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #e8e1ef;
+  font: inherit;
+  font-size: 12px;
+}
+
+.birth-picker-years button.selected,
+.birth-picker-months button.selected,
+.birth-picker-days button.selected {
+  border-color: rgba(192, 132, 252, 0.65);
+  background: #9333ea;
+  color: white;
+}
+
+.birth-picker-weekdays,
+.birth-picker-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.birth-picker-weekdays {
+  margin-bottom: 6px;
+}
+
+.birth-picker-weekdays span {
+  color: #a9a0b5;
+  font-size: 10px;
+  text-align: center;
+}
+
+.birth-picker-days button {
+  min-height: 34px;
+  padding: 2px;
+}
+
+.birth-picker-cancel {
+  width: 100%;
+  min-height: 38px;
+  margin-top: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: transparent;
+  color: #cfc5da;
+  font: inherit;
+  font-size: 12px;
+}
+
+/* Center and brighten bus seat column labels */
+.vizaran-seat-labels {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.vizaran-seat-labels > span {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  color: #ffffff !important;
+  text-align: center !important;
+  justify-self: stretch !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Birth calendar: centered floating window */
+.birth-picker-popover {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+
+  width: min(340px, calc(100vw - 36px)) !important;
+  max-width: calc(100vw - 36px) !important;
+  max-height: min(78vh, 560px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+
+  margin: 0 !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  z-index: 99999 !important;
+
+  background: #17131f !important;
+  border: 1px solid rgba(192, 132, 252, 0.35) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.75) !important;
+}
+
+/* Keep year and month options usable on small screens */
+.birth-picker-years,
+.birth-picker-months {
+  gap: 8px !important;
+}
+
+.birth-picker-years button,
+.birth-picker-months button {
+  min-height: 42px !important;
+}
+
+/* Prevent the calendar window from being clipped by the passenger form */
+.birth-picker {
+  position: static !important;
+}
+
+/* Options page: included price reassurance */
+.vizaran-options-price-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin: 18px 0 14px;
+  padding: 14px;
+  border: 1px solid rgba(192, 132, 252, 0.24);
+  border-radius: 14px;
+  background: rgba(168, 85, 247, 0.08);
+  box-sizing: border-box;
+}
+
+.vizaran-options-price-check {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.2);
+  color: #e9d5ff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.vizaran-options-price-note p {
+  margin: 0;
+  color: #d6cddd;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.vizaran-options-price-note strong {
+  color: #ffffff;
+  font-weight: 600;
+}

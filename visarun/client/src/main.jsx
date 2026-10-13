@@ -210,6 +210,27 @@ function App() {
 
   const [timeLeft, setTimeLeft] = useState(1200);
 
+  useEffect(() => {
+    if (screen !== "payment" || !order) return;
+
+    const deadline = Number(order.paymentDeadline || 0);
+    if (!deadline) {
+      setTimeLeft(0);
+      return;
+    }
+
+    const updateTimer = () => {
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setTimeLeft(remaining);
+    };
+
+    updateTimer();
+    const intervalId = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [screen, order]);
+
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -604,6 +625,10 @@ function App() {
     setScreen("terms", true);
   }
 
+  function openLegalDocument(documentScreen) {
+    setScreen(documentScreen, true);
+  }
+
   async function savePassportAndContinue() {
     for (let i = 0; i < passengers.length; i++) {
       const passenger = passengers[i];
@@ -974,6 +999,7 @@ function App() {
             user={user}
             onPrivacy={openPrivacy}
             onTerms={openTerms}
+            onOpenLegal={openLegalDocument}
           />
         )}
         {screen === "admin" && (
@@ -1001,6 +1027,38 @@ function App() {
           <LegalPage
             title="Условия сервиса"
             url={`${API}/legal/terms`}
+            onBack={() => setScreen("profile")}
+          />
+        )}
+
+        {screen === "consent" && (
+          <LegalPage
+            title="Согласие на обработку персональных данных"
+            url={`${API}/legal/consent`}
+            onBack={() => setScreen("profile")}
+          />
+        )}
+
+        {screen === "refunds" && (
+          <LegalPage
+            title="Правила бронирования, отмены и возврата"
+            url={`${API}/legal/refunds`}
+            onBack={() => setScreen("profile")}
+          />
+        )}
+
+        {screen === "offer" && (
+          <LegalPage
+            title="Договор-оферта"
+            url={`${API}/legal/offer`}
+            onBack={() => setScreen("profile")}
+          />
+        )}
+
+        {screen === "border-risks" && (
+          <LegalPage
+            title="Риски пересечения государственной границы"
+            url={`${API}/legal/border-risks`}
             onBack={() => setScreen("profile")}
           />
         )}
@@ -1602,6 +1660,171 @@ function TurnstileWidget({ siteKey, onToken }) {
   );
 }
 
+function BirthDatePicker({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [step, setStep] = useState("year");
+  const [year, setYear] = useState(new Date().getFullYear() - 25);
+  const [month, setMonth] = useState(0);
+  const [decadeStart, setDecadeStart] = useState(
+    Math.floor((new Date().getFullYear() - 25) / 12) * 12
+  );
+
+  const months = [
+    "Январь", "Февраль", "Март", "Апрель",
+    "Май", "Июнь", "Июль", "Август",
+    "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+  ];
+
+  const parsed = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
+  const selectedYear = parsed ? Number(parsed[1]) : null;
+  const selectedMonth = parsed ? Number(parsed[2]) - 1 : null;
+  const selectedDay = parsed ? Number(parsed[3]) : null;
+
+  function openPicker() {
+    const initialYear = selectedYear ?? new Date().getFullYear() - 25;
+    setYear(initialYear);
+    setMonth(selectedMonth ?? 0);
+    setDecadeStart(Math.floor(initialYear / 12) * 12);
+    setStep("year");
+    setIsOpen(true);
+  }
+
+  function chooseDay(day) {
+    const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    onChange(date);
+    setIsOpen(false);
+  }
+
+  function previousStep() {
+    if (step === "day") setStep("month");
+    else if (step === "month") setStep("year");
+    else setDecadeStart((current) => current - 12);
+  }
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
+  const dayCells = [
+    ...Array(firstWeekday).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1)
+  ];
+
+  return (
+    <div className="birth-picker">
+      <button
+        type="button"
+        className="birth-picker-trigger"
+        onClick={() => isOpen ? setIsOpen(false) : openPicker()}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+      >
+        <span>{formatBirthDate(value) || "Выберите дату рождения"}</span>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" strokeWidth="1.7" />
+          <path d="M7 3V7M17 3V7M3 10H21" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="birth-picker-popover" role="dialog" aria-label="Выбор даты рождения">
+          <div className="birth-picker-header">
+            <button type="button" onClick={previousStep} aria-label="Назад">‹</button>
+            <strong>
+              {step === "year" && `${decadeStart}–${decadeStart + 11}`}
+              {step === "month" && year}
+              {step === "day" && `${months[month]} ${year}`}
+            </strong>
+            {step === "year" ? (
+              <button type="button" onClick={() => setDecadeStart((current) => current + 12)} aria-label="Следующие годы">›</button>
+            ) : (
+              <span className="birth-picker-header-spacer" />
+            )}
+          </div>
+
+          {step === "year" && (
+            <div className="birth-picker-years">
+              {Array.from({ length: 12 }, (_, i) => decadeStart + i).map((itemYear) => (
+                <button
+                  type="button"
+                  key={itemYear}
+                  className={itemYear === year ? "selected" : ""}
+                  onClick={() => {
+                    setYear(itemYear);
+                    setStep("month");
+                  }}
+                >
+                  {itemYear}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {step === "month" && (
+            <div className="birth-picker-months">
+              {months.map((itemMonth, index) => (
+                <button
+                  type="button"
+                  key={itemMonth}
+                  className={index === month ? "selected" : ""}
+                  onClick={() => {
+                    setMonth(index);
+                    setStep("day");
+                  }}
+                >
+                  {itemMonth}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {step === "day" && (
+            <>
+              <div className="birth-picker-weekdays">
+                {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((dayName) => (
+                  <span key={dayName}>{dayName}</span>
+                ))}
+              </div>
+              <div className="birth-picker-days">
+                {dayCells.map((day, index) => day === null ? (
+                  <span key={`empty-${index}`} />
+                ) : (
+                  <button
+                    type="button"
+                    key={day}
+                    className={
+                      selectedYear === year &&
+                      selectedMonth === month &&
+                      selectedDay === day
+                        ? "selected"
+                        : ""
+                    }
+                    onClick={() => chooseDay(day)}
+                  >
+                    {day}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          <button
+            type="button"
+            className="birth-picker-cancel"
+            onClick={() => setIsOpen(false)}
+          >
+            Закрыть
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatBirthDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
+  if (!match) return "";
+  return `${match[3]}.${match[2]}.${match[1]}`;
+}
+
 function Passport({
   passengers,
   setPassengers,
@@ -1731,45 +1954,12 @@ function Passport({
               <label>
                 Дата рождения
 
-                <div className="birth-date-wrap">
-
-                  <input
-                    className="birth-date-input"
-                    type="date"
-                    value={passenger.birthDate}
-                    onChange={(e) =>
-                      updatePassenger(
-                        index,
-                        "birthDate",
-                        e.target.value
-                      )
-                    }
-                  />
-
-                  <span
-                    className="birth-date-icon"
-                    aria-hidden="true"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <rect
-                        x="3"
-                        y="5"
-                        width="18"
-                        height="16"
-                        rx="3"
-                        stroke="currentColor"
-                        strokeWidth="1.7"
-                      />
-                      <path
-                        d="M7 3V7M17 3V7M3 10H21"
-                        stroke="currentColor"
-                        strokeWidth="1.7"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </span>
-
-                </div>
+                <BirthDatePicker
+                  value={passenger.birthDate}
+                  onChange={(value) =>
+                    updatePassenger(index, "birthDate", value)
+                  }
+                />
               </label>
 
               <label>
@@ -1831,7 +2021,7 @@ function Passport({
           </span>
 
           <span className="consent-text">
-            Согласен с{" "}
+            Даю согласие на обработку персональных данных и подтверждаю, что ознакомился с{" "}
 
             <button
               type="button"
@@ -1842,9 +2032,20 @@ function Passport({
                 onPrivacy();
               }}
             >
-              политикой обработки
-              персональных данных
+              политикой обработки персональных данных
             </button>
+            {" "}и{" "}
+            <button
+              type="button"
+              className="link-button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openLegalDocument("consent");
+              }}
+            >
+              текстом согласия
+            </button>.
           </span>
 
         </label>
@@ -2160,10 +2361,10 @@ function SeatSelection({
               </div>
 
               <div className="vizaran-seat-labels">
-                <span>A</span>
-                <span>B</span>
-                <span>A</span>
-                <span>B</span>
+                <span>Нижнее</span>
+                <span>Верхнее</span>
+                <span>Нижнее</span>
+                <span>Верхнее</span>
               </div>
 
               <div className="vizaran-seat-layout">
@@ -2394,6 +2595,14 @@ function OptionsSelection({
         </label>
       </section>
 
+      <div className="vizaran-options-price-note">
+        <span className="vizaran-options-price-check">✓</span>
+        <p>
+          Все дополнительные опции уже включены в стоимость услуги.
+          <strong> Доплачивать за них не нужно.</strong>
+        </p>
+      </div>
+
       <div className="vizaran-options-footer">
         <button type="button" className="vizaran-options-continue"
           disabled={!accepted || loading} onClick={onContinue}>
@@ -2565,6 +2774,7 @@ function Payment({
 
 function Bookings({ orders, onContinue }) {
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   const visaRunOrders = orders.filter((order) => {
     const route = String(order.route || "").toLowerCase();
@@ -2586,6 +2796,22 @@ function Bookings({ orders, onContinue }) {
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
+  function formatDate(value) {
+    if (!value) return null;
+    const match = typeof value === "string"
+      ? value.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
+      : null;
+
+    if (match) {
+      return `${match[1].padStart(2, "0")}.${match[2].padStart(2, "0")}.${match[3]}`;
+    }
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? String(value)
+      : date.toLocaleDateString("ru-RU");
+  }
+
   function isCancelled(order) {
     const status = String(order.status || "").toLowerCase();
     return ["cancelled", "canceled", "отменено", "отменён", "отменен", "отменена"]
@@ -2594,16 +2820,100 @@ function Bookings({ orders, onContinue }) {
 
   function formatValidity(order) {
     const value =
+      order.permissionValidUntil ||
       order.validUntil ||
       order.validityUntil ||
       order.stampValidUntil;
 
-    if (!value) return null;
+    return formatDate(value);
+  }
 
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
+  function statusLabel(order) {
+    if (isCancelled(order)) return "Отменено";
 
-    return date.toLocaleDateString("ru-RU");
+    const labels = {
+      draft: "Черновик",
+      in_progress: "Оформляется",
+      awaiting_payment: "Ожидает оплаты",
+      payment_check: "Проверка оплаты",
+      confirmed: "Подтверждено",
+      cancelled: "Отменено",
+      canceled: "Отменено"
+    };
+
+    return labels[order.status] || order.status || "Бронирование";
+  }
+
+  function displayValue(value) {
+    if (value === null || value === undefined || value === "") return "—";
+    if (typeof value === "boolean") return value ? "Да" : "Нет";
+    if (typeof value === "object") return JSON.stringify(value, null, 2);
+    return String(value);
+  }
+
+  function DetailRow({ label, value }) {
+    if (value === null || value === undefined || value === "") return null;
+
+    return (
+      <div className="booking-detail-row">
+        <span>{label}</span>
+        <strong>{displayValue(value)}</strong>
+      </div>
+    );
+  }
+
+  function renderObjectRows(value, prefix = "") {
+    if (!value || typeof value !== "object") return null;
+
+    const entries = Object.entries(value).filter(([, item]) =>
+      item !== null && item !== undefined && item !== ""
+    );
+
+    if (!entries.length) return null;
+
+    return entries.map(([key, item]) => {
+      const labels = {
+        fullName: "ФИО",
+        firstName: "Имя",
+        lastName: "Фамилия",
+        birthDate: "Дата рождения",
+        passportNumber: "Номер паспорта",
+        number: "Номер",
+        type: "Тип",
+        name: "Название",
+        label: "Опция",
+        enabled: "Выбрано",
+        selected: "Выбрано"
+      };
+
+      const label = labels[key] || key;
+      const rowLabel = prefix ? `${prefix} · ${label}` : label;
+
+      if (Array.isArray(item)) {
+        return (
+          <div className="booking-detail-row" key={`${rowLabel}-${key}`}>
+            <span>{rowLabel}</span>
+            <strong>{item.map(displayValue).join(", ")}</strong>
+          </div>
+        );
+      }
+
+      if (item && typeof item === "object") {
+        return (
+          <div className="booking-detail-nested" key={`${rowLabel}-${key}`}>
+            <h4>{rowLabel}</h4>
+            {renderObjectRows(item, rowLabel)}
+          </div>
+        );
+      }
+
+      return (
+        <div className="booking-detail-row" key={`${rowLabel}-${key}`}>
+          <span>{rowLabel}</span>
+          <strong>{displayValue(item)}</strong>
+        </div>
+      );
+    });
   }
 
   const today = new Date();
@@ -2619,7 +2929,6 @@ function Bookings({ orders, onContinue }) {
       return travelDate !== null && travelDate < today;
     }
 
-    // Existing bookings without a saved date stay visible under upcoming.
     return travelDate === null || travelDate >= today;
   });
 
@@ -2628,6 +2937,92 @@ function Bookings({ orders, onContinue }) {
     { id: "previous", label: "Предыдущие" },
     { id: "cancelled", label: "Отменённые" }
   ];
+
+  if (selectedOrder) {
+    const order = orders.find((item) => item.id === selectedOrder.id) || selectedOrder;
+    const travelDate = getTravelDate(order);
+    const validity = formatValidity(order);
+    const passport = order.passport;
+    const options = order.options;
+
+    return (
+      <div className="bookings-page booking-detail-page">
+        <button
+          type="button"
+          className="booking-detail-back"
+          onClick={() => setSelectedOrder(null)}
+        >
+          <span aria-hidden="true">←</span> Все бронирования
+        </button>
+
+        <header className="page-header">
+          <span className="page-kicker">FESTO / ДЕТАЛИ ПОЕЗДКИ</span>
+          <h1>Моя бронь</h1>
+          <p>{order.route || "Маршрут не указан"}</p>
+        </header>
+
+        <section className="booking-detail-card">
+          <div className="booking-detail-top">
+            <span className="booking-route-label">ВИЗАРАН</span>
+            <span className="booking-status">{statusLabel(order)}</span>
+          </div>
+          <div className="booking-detail-number">
+            <span>Номер бронирования</span>
+            <strong>{order.id || "—"}</strong>
+          </div>
+          <div className="booking-detail-row">
+            <span>Маршрут</span>
+            <strong>{order.route || "—"}</strong>
+          </div>
+          <DetailRow label="Дата поездки" value={travelDate ? travelDate.toLocaleDateString("ru-RU") : null} />
+          <DetailRow label="Услуга" value={order.service} />
+          <DetailRow label="Тип разрешения" value={order.permissionType} />
+          <DetailRow label="Место" value={order.seat} />
+          <DetailRow label="Дата въезда во Вьетнам" value={formatDate(order.vietnamEntryDate)} />
+          <DetailRow label="Разрешение действительно до" value={validity} />
+          <DetailRow label="Стоимость в рублях" value={order.priceRub != null ? `${Number(order.priceRub).toLocaleString("ru-RU")} ₽` : null} />
+          <DetailRow label="Стоимость в донгах" value={order.priceVnd != null ? `${Number(order.priceVnd).toLocaleString("ru-RU")} ₫` : null} />
+          <DetailRow label="Дата создания" value={formatDate(order.createdAt)} />
+          <DetailRow label="Дата подтверждения" value={formatDate(order.confirmedAt)} />
+          <DetailRow label="Предупреждение о медицине принято" value={order.medicalWarningAccepted} />
+        </section>
+
+        {passport && typeof passport === "object" && (
+          <section className="booking-detail-card">
+            <h2>Паспортные данные</h2>
+            {renderObjectRows(passport)}
+          </section>
+        )}
+
+        {Array.isArray(order.passengers) && order.passengers.length > 0 && (
+          <section className="booking-detail-card">
+            <h2>Пассажиры</h2>
+            {order.passengers.map((passenger, index) => (
+              <div className="booking-detail-passenger" key={passenger.id || index}>
+                <h3>Пассажир {index + 1}</h3>
+                {renderObjectRows(passenger)}
+              </div>
+            ))}
+          </section>
+        )}
+
+        {options && typeof options === "object" && Object.keys(options).length > 0 && (
+          <section className="booking-detail-card">
+            <h2>Дополнительные опции</h2>
+            {renderObjectRows(options)}
+          </section>
+        )}
+
+        {order.receipt && (
+          <section className="booking-detail-card">
+            <h2>Подтверждение оплаты</h2>
+            <DetailRow label="Имя файла чека" value={order.receipt.originalName} />
+            <DetailRow label="Чек загружен" value={formatDate(order.receipt.uploadedAt)} />
+          </section>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="bookings-page">
@@ -2680,9 +3075,7 @@ function Bookings({ orders, onContinue }) {
               <div className="booking-card" key={order.id}>
                 <div className="booking-card-header">
                   <span className="booking-route-label">ВИЗАРАН</span>
-                  <span className="booking-status">
-                    {isCancelled(order) ? "Отменено" : order.status || "Забронировано"}
-                  </span>
+                  <span className="booking-status">{statusLabel(order)}</span>
                 </div>
 
                 <h3>{order.route}</h3>
@@ -2696,7 +3089,7 @@ function Bookings({ orders, onContinue }) {
 
                 <div className="booking-info-row">
                   <span>Услуга</span>
-                  <strong>{order.service}</strong>
+                  <strong>{order.service || "—"}</strong>
                 </div>
 
                 <div className="booking-info-row">
@@ -2713,7 +3106,7 @@ function Bookings({ orders, onContinue }) {
 
                 <div className="booking-info-row">
                   <span>Стоимость поездки</span>
-                  <strong>{order.priceRub?.toLocaleString("ru-RU")} ₽</strong>
+                  <strong>{order.priceRub != null ? `${Number(order.priceRub).toLocaleString("ru-RU")} ₽` : "—"}</strong>
                 </div>
 
                 {["draft", "in_progress", "awaiting_payment"].includes(order.status) && (
@@ -2725,6 +3118,26 @@ function Bookings({ orders, onContinue }) {
                     {order.status === "awaiting_payment"
                       ? "Продолжить оплату"
                       : "Продолжить бронирование"}
+                  </button>
+                )}
+
+                {order.status === "confirmed" && (
+                  <button
+                    type="button"
+                    className="primary-button booking-open-button"
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    Открыть бронирование
+                  </button>
+                )}
+
+                {order.status === "payment_check" && (
+                  <button
+                    type="button"
+                    className="primary-button booking-open-button"
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    Посмотреть бронирование
                   </button>
                 )}
               </div>
@@ -2744,7 +3157,8 @@ function Bookings({ orders, onContinue }) {
 function Profile({
   user,
   onPrivacy,
-  onTerms
+  onTerms,
+  onOpenLegal
 }) {
   return (
     <div className="profile-page">
@@ -2887,6 +3301,26 @@ function Profile({
 
           <button onClick={onTerms}>
             Условия сервиса
+            <span>→</span>
+          </button>
+
+          <button onClick={() => onOpenLegal("consent")}>
+            Согласие на обработку данных
+            <span>→</span>
+          </button>
+
+          <button onClick={() => onOpenLegal("refunds")}>
+            Отмена и возврат
+            <span>→</span>
+          </button>
+
+          <button onClick={() => onOpenLegal("offer")}>
+            Договор-оферта
+            <span>→</span>
+          </button>
+
+          <button onClick={() => onOpenLegal("border-risks")}>
+            Риски пересечения границы
             <span>→</span>
           </button>
         </div>
